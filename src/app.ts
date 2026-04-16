@@ -35,7 +35,6 @@ export function createApp(options: AppOptions = {}) {
     )
     .use(
       openapi({
-        enabled: config.nodeEnv !== "production",
         documentation: {
           info: {
             title: "Reseam API",
@@ -64,9 +63,24 @@ export function createApp(options: AppOptions = {}) {
         return status(400, { error: error.message });
       }
 
+      if (code === "NOT_FOUND") {
+        return status(404, { error: "Not found" });
+      }
+
       console.error(error);
       return status(500, { error: "Internal server error" });
     })
+    .get("/", () => ({
+      name: "Reseam API",
+      version,
+      docs: "/openapi",
+      endpoints: {
+        patches: "/v1/patches",
+        manager: "/v1/manager",
+        announcements: "/v1/announcements",
+        health: "/v1/health",
+      },
+    }))
     .use(patchesRoutes(config, upstream))
     .use(managerRoutes(config, upstream))
     .use(announcementsRoutes(config, db))
