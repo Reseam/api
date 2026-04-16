@@ -8,6 +8,8 @@ RUN bun install --frozen-lockfile --production
 COPY drizzle.config.ts tsconfig.json ./
 COPY src ./src
 
+ARG VERSION=dev
+ENV VERSION=$VERSION
 ENV NODE_ENV=production
 ENV PORT=4000
 

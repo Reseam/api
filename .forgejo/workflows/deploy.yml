@@ -1,17 +1,19 @@
-name: deploy
+name: build
 
 on:
   push:
     branches: [main]
 
+env:
+  IMAGE: git.reseam.app/reseam/api
+
 jobs:
-  build-and-deploy:
+  build:
     runs-on: docker
     container:
       image: code.forgejo.org/oci/node:20-bookworm
       volumes:
         - /var/run/docker.sock:/var/run/docker.sock
-        - /root/reseam-api:/deploy
     steps:
       - uses: actions/checkout@v4
 
@@ -25,22 +27,17 @@ jobs:
           codename=$(. /etc/os-release && echo "$VERSION_CODENAME")
           echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian $codename stable" > /etc/apt/sources.list.d/docker.list
           apt-get update -qq
-          apt-get install -y -qq --no-install-recommends docker-ce-cli docker-compose-plugin
+          apt-get install -y -qq --no-install-recommends docker-ce-cli
 
-      - name: login to registry
-        run: echo "${{ secrets.REGISTRY_TOKEN }}" | docker login git.reseam.app -u Cossale --password-stdin
+      - name: login
+        run: echo "${{ secrets.REGISTRY_TOKEN }}" | docker login git.reseam.app -u "${{ secrets.REGISTRY_USER }}" --password-stdin
 
       - name: build and push
         run: |
           docker build \
-            -t git.reseam.app/reseam/api:latest \
-            -t git.reseam.app/reseam/api:${{ github.sha }} \
+            --build-arg VERSION=${{ github.sha }} \
+            -t ${{ env.IMAGE }}:latest \
+            -t ${{ env.IMAGE }}:${{ github.sha }} \
             .
-          docker push git.reseam.app/reseam/api:latest
-          docker push git.reseam.app/reseam/api:${{ github.sha }}
-
-      - name: deploy
-        run: |
-          cd /deploy
-          docker compose pull
-          docker compose up -d
+          docker push ${{ env.IMAGE }}:latest
+          docker push ${{ env.IMAGE }}:${{ github.sha }}
