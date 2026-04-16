@@ -28,7 +28,7 @@ jobs:
           apt-get install -y -qq --no-install-recommends docker-ce-cli docker-compose-plugin
 
       - name: login to registry
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login git.reseam.app -u "${{ github.actor }}" --password-stdin
+        run: echo "${{ secrets.REGISTRY_TOKEN }}" | docker login git.reseam.app -u Cossale --password-stdin
 
       - name: build and push
         run: |
