@@ -1,7 +1,11 @@
-import { Elysia } from "elysia";
+import { createApp } from "./app";
+import { readConfig } from "./config";
 
-const app = new Elysia().get("/", () => "Hello Elysia").listen(3000);
+const config = readConfig();
+const app = createApp({ config }).listen(config.port);
 
 console.log(
-  `🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`
+  `Reseam API listening at http://${app.server?.hostname}:${app.server?.port}`,
 );
+
+export type { App } from "./app";

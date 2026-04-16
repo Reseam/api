@@ -1,0 +1,17 @@
+services:
+  api:
+    build: .
+    environment:
+      PATCHES_URL: https://reseam.app/patches.json
+      MANAGER_URL: https://reseam.app/manager.json
+      ADMIN_TOKEN: ${ADMIN_TOKEN}
+      DB_PATH: /data/reseam.db
+      CACHE_TTL: "300"
+      ALLOWED_ORIGINS: https://reseam.app,https://manager.reseam.app
+    volumes:
+      - reseam-data:/data
+    ports:
+      - "4000:4000"
+
+volumes:
+  reseam-data:
