@@ -12,9 +12,9 @@ export type Config = {
 };
 
 const DEFAULT_PATCHES_URL =
-  "https://git.reseam.app/reseam/patches/releases/latest/download/patches.json";
+  "https://git.reseam.app/reseam/patches/releases/download/latest/patches.json";
 const DEFAULT_MANAGER_URL =
-  "https://git.reseam.app/reseam/manager/releases/latest/download/manager.json";
+  "https://git.reseam.app/reseam/manager/releases/download/latest/manager.json";
 const DEFAULT_PATCHES_BUNDLE_BASE_URL =
   "https://git.reseam.app/reseam/patches/releases/download";
 const DEFAULT_MANAGER_BINARY_BASE_URL =
