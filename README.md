@@ -30,8 +30,8 @@ docker compose up -d
 | Var                        | Default                                                                    |
 | -------------------------- | -------------------------------------------------------------------------- |
 | `PORT`                     | `4000`                                                                     |
-| `PATCHES_URL`              | `https://git.reseam.app/reseam/patches/releases/latest/download/patches.json` |
-| `MANAGER_URL`              | `https://git.reseam.app/reseam/manager/releases/latest/download/manager.json` |
+| `PATCHES_URL`              | `https://git.reseam.app/reseam/patches/releases/download/latest/patches.json` |
+| `MANAGER_URL`              | `https://git.reseam.app/reseam/manager/releases/download/latest/manager.json` |
 | `PATCHES_BUNDLE_BASE_URL`  | `https://git.reseam.app/reseam/patches/releases/download`                  |
 | `MANAGER_BINARY_BASE_URL`  | `https://git.reseam.app/reseam/manager/releases/download`                  |
 | `ADMIN_TOKEN`              | empty — announcement writes return 503                                     |
