@@ -8,6 +8,7 @@ import { announcementsRoutes } from "./routes/announcements";
 import { healthRoutes } from "./routes/health";
 import { managerRoutes } from "./routes/manager";
 import { patchesRoutes } from "./routes/patches";
+import { proxyRoutes } from "./routes/proxy";
 import { createUpstream } from "./upstream";
 
 type AppOptions = {
@@ -43,6 +44,7 @@ export function createApp(options: AppOptions = {}) {
           tags: [
             { name: "Patches", description: "Patch bundle release metadata" },
             { name: "Manager", description: "Manager binary release metadata" },
+            { name: "Proxy", description: "Raw upstream index files and asset redirects" },
             { name: "Announcements", description: "Operational notices" },
             { name: "Health", description: "Service health" },
           ],
@@ -79,8 +81,11 @@ export function createApp(options: AppOptions = {}) {
         manager: "/v1/manager",
         announcements: "/v1/announcements",
         health: "/v1/health",
+        patchesIndex: "/patches.json",
+        managerIndex: "/manager.json",
       },
     }))
+    .use(proxyRoutes(config, upstream))
     .use(patchesRoutes(config, upstream))
     .use(managerRoutes(config, upstream))
     .use(announcementsRoutes(config, db))

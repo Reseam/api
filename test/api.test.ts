@@ -34,6 +34,8 @@ const config: Config = {
   port: 4000,
   patchesUrl: "https://example.test/patches.json",
   managerUrl: "https://example.test/manager.json",
+  patchesBundleBaseUrl: "https://git.example.test/reseam/patches/releases/download",
+  managerBinaryBaseUrl: "https://git.example.test/reseam/manager/releases/download",
   adminToken: "secret",
   dbPath: ":memory:",
   cacheTtl: 300,
@@ -142,6 +144,49 @@ describe("Manager", () => {
   it("returns stable history", async () => {
     const body = await (await testApp().handle(req("/v1/manager/history"))).json();
     expect(body.releases).toHaveLength(1);
+  });
+});
+
+describe("Proxy", () => {
+  it("serves patches.json verbatim", async () => {
+    const res = await testApp().handle(req("/patches.json"));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual(releaseFile);
+    expect(res.headers.get("etag")).toStartWith('"');
+    expect(res.headers.get("cache-control")).toContain("s-maxage=300");
+  });
+
+  it("serves manager.json verbatim", async () => {
+    const res = await testApp().handle(req("/manager.json"));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual(releaseFile);
+  });
+
+  it("redirects patches bundle requests to Forgejo", async () => {
+    const res = await testApp().handle(
+      req("/patches/v1.2.3/reseam-patches.reseam", { redirect: "manual" }),
+    );
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe(
+      "https://git.example.test/reseam/patches/releases/download/v1.2.3/reseam-patches.reseam",
+    );
+  });
+
+  it("redirects manager binary requests to Forgejo", async () => {
+    const res = await testApp().handle(
+      req("/manager/v0.1.0/manager-linux-x64", { redirect: "manual" }),
+    );
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe(
+      "https://git.example.test/reseam/manager/releases/download/v0.1.0/manager-linux-x64",
+    );
+  });
+
+  it("rejects path traversal in bundle params", async () => {
+    const res = await testApp().handle(
+      req("/patches/..%2Fetc/passwd", { redirect: "manual" }),
+    );
+    expect(res.status).toBe(400);
   });
 });
 

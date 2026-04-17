@@ -2,8 +2,10 @@ services:
   api:
     build: .
     environment:
-      PATCHES_URL: https://reseam.app/patches.json
-      MANAGER_URL: https://reseam.app/manager.json
+      PATCHES_URL: https://git.reseam.app/reseam/patches/releases/latest/download/patches.json
+      MANAGER_URL: https://git.reseam.app/reseam/manager/releases/latest/download/manager.json
+      PATCHES_BUNDLE_BASE_URL: https://git.reseam.app/reseam/patches/releases/download
+      MANAGER_BINARY_BASE_URL: https://git.reseam.app/reseam/manager/releases/download
       ADMIN_TOKEN: ${ADMIN_TOKEN}
       DB_PATH: /data/reseam.db
       CACHE_TTL: "300"
