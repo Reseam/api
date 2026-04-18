@@ -5,7 +5,7 @@ description: Write operational notices clients can surface.
 
 # Announcements
 
-Announcements are short messages Reseam Manager and the website can show their users — incident notices, release notes, deprecation warnings. They live in SQLite on the API host. Reads are public and cached; writes require the admin token.
+Announcements are short messages Reseam Manager and the website can show their users: incident notices, release notes, deprecation warnings. They live in SQLite on the API host. Reads are public and cached; writes require the admin token.
 
 ## Payload
 
@@ -18,10 +18,10 @@ Announcements are short messages Reseam Manager and the website can show their u
 }
 ```
 
-- `title` — one line. Shown in lists.
-- `body` — longer text. Markdown is allowed; clients render it.
-- `tag` — optional grouping key. Clients filter by tag.
-- `level` — one of `info`, `warning`, `critical`. Defaults to `info`. Clients style accordingly.
+- `title`: one line. Shown in lists.
+- `body`: longer text. Markdown is allowed; clients render it.
+- `tag`: optional grouping key. Clients filter by tag.
+- `level`: one of `info`, `warning`, `critical`. Defaults to `info`. Clients style accordingly.
 
 ## Create
 
@@ -67,7 +67,7 @@ curl -X DELETE https://api.reseam.app/v1/announcements/42 \
 	-H "Authorization: Bearer $ADMIN_TOKEN"
 ```
 
-Returns `{ ok: true }`. Prefer archiving — deletes are permanent.
+Returns `{ ok: true }`. Prefer archiving; deletes are permanent.
 
 ## Errors
 

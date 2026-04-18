@@ -88,5 +88,5 @@
 		<text class="label" x="95" y="50" text-anchor="middle">any patches.json URL</text>
 	</g>
 	<path class="link-dashed" d="M 220 320 C 400 320, 660 260, 820 150" marker-end="url(#arrow)" />
-	<text class="label" x="500" y="310" text-anchor="middle">manager reads directly, bypasses the API</text>
+	<text class="label" x="500" y="310" text-anchor="middle">Reseam Manager reads directly, bypasses the API</text>
 </svg>

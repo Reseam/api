@@ -39,7 +39,7 @@ Point `PATCHES_URL` at a `patches.json` you host. The URLs in that file's `bundl
 ## CACHE_TTL tuning
 
 - **Low (60–120s):** announcements feel live, upstream gets hit more often.
-- **Default (300s):** good for the official bundle — new releases show up within 5 minutes.
+- **Default (300s):** good for the official bundle; new releases show up within 5 minutes.
 - **High (3600s):** use when upstream is slow or rate-limited. Clients still see `ETag` so 304s work.
 
 The cache is in-memory and per-process. Restarting the server clears it.
