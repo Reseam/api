@@ -1,33 +1,26 @@
 ---
 title: Architecture
-description: Where the API sits between bundle authors and clients.
+description: Where the API sits between the official bundle and clients.
 ---
 
 # Architecture
 
-```
-┌────────────┐    patches.json     ┌─────────────┐     /patches.json      ┌──────────┐
-│   Author   │ ──────────────────▶ │  Reseam API │ ─────────────────────▶ │ Manager  │
-│ (any host) │                     │  (cache +   │     /v1/patches        │ Website  │
-└────────────┘                     │   SQLite)   │     /patches/:tag/:f   └──────────┘
-                                   └─────────────┘
-                                          │
-                                          ▼ SQLite
-                                   announcements
-```
+![Architecture diagram: the Reseam API fetches and caches one configured patches.json from reseam/patches, serves /v1/patches and /patches/:tag/:file to Manager and Website, and stores announcements in SQLite. Third-party bundles bypass the API; the manager reads their patches.json URLs directly.](architecture.svg)
+
+## Scope
+
+The Reseam API is a single-bundle proxy. One instance fronts one bundle, the official one configured via `PATCHES_URL`. Third-party bundles do not go through it. The manager reads their `patches.json` URLs directly.
 
 ## Three actors
 
-1. **Author** builds a `.reseam` bundle, signs it, and publishes it to a release host. Publishes a `patches.json` alongside. No server required on the author side.
-2. **API** reads that `patches.json` on a schedule, caches it, and serves it back out under `*.reseam.app`. Also serves `manager.json` and stores announcements.
-3. **Consumer** — Reseam Manager or the website — reads from the API. For third-party bundles, clients can also read a `patches.json` directly from any URL; the API is an optional convenience for the official bundle.
+1. **Upstream.** The `reseam/patches` repo publishes a signed `.reseam` archive and a `patches.json` alongside it. This is the one source the API is pointed at.
+2. **API.** Fetches that `patches.json` on demand, caches it, and serves stable endpoints under `*.reseam.app`. Also serves `manager.json` and stores announcements.
+3. **Consumers.** The website reads from the API for the official bundle. Reseam Manager does the same, and also reads third-party `patches.json` URLs directly.
 
-## Why a proxy at all
+## What the API adds
 
-Three reasons:
-
-- **Stable URLs.** Bundles move — release hosts change tags, authors rehost, servers go down. The API gives clients a single place to look. If the upstream moves, only the API's config changes.
-- **Caching.** The upstream is usually a release asset on a git forge. A thousand phones hitting that at the same minute is rude. The API caches for `CACHE_TTL` seconds (default 5 minutes) and sends proper `ETag` / `Cache-Control` headers.
+- **Stable URLs.** Bundles move. Release hosts change tags, authors rehost, servers go down. The API gives clients a single place to look. If the upstream moves, only the API's config changes.
+- **Caching.** The upstream is usually a release asset on a git forge. A thousand phones hitting that at the same minute is rude. The API caches for `CACHE_TTL` seconds (default 5 minutes) and sends proper `ETag` and `Cache-Control` headers.
 - **One origin for CORS.** Clients only need to trust `*.reseam.app`.
 
 ## Non-goals
