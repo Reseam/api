@@ -12,16 +12,37 @@ Announcements are short messages Reseam Manager and the website can show their u
 ```json
 {
 	"title": "Patch downloads are slow",
-	"body": "Our mirror is catching up after the 1.0.50 release.",
-	"tag": "status",
-	"level": "warning"
+	"content": "Our mirror is catching up after the 1.0.50 release.",
+	"tags": ["status"],
+	"level": 1,
+	"author": "reseam"
 }
 ```
 
-- `title`: one line. Shown in lists.
-- `body`: longer text. Markdown is allowed; clients render it.
-- `tag`: optional grouping key. Clients filter by tag.
-- `level`: one of `info`, `warning`, `critical`. Defaults to `info`. Clients style accordingly.
+- `title`: one line. Shown in lists. Required, non-empty.
+- `content`: longer text. Optional. Markdown is allowed; clients render it.
+- `tags`: array of strings. Optional. Tags are lowercased and trimmed server-side; duplicates are dropped.
+- `level`: integer `0`, `1`, `2`, or `3`. Optional, defaults to `0`. Clients style higher levels more prominently.
+- `author`: display name for the writer. Optional.
+
+## Response shape
+
+Every read and every successful write returns the full record:
+
+```json
+{
+	"id": 42,
+	"author": "reseam",
+	"title": "Patch downloads are slow",
+	"content": "Our mirror is catching up after the 1.0.50 release.",
+	"level": 1,
+	"created_at": "2026-04-19T08:22:00.033Z",
+	"archived_at": null,
+	"tags": ["status"]
+}
+```
+
+`archived_at` is `null` while the announcement is live and an ISO-8601 UTC timestamp once archived.
 
 ## Create
 
@@ -31,13 +52,13 @@ curl -X POST https://api.reseam.app/v1/announcements \
 	-H "Content-Type: application/json" \
 	-d '{
 		"title": "Patch downloads are slow",
-		"body": "Our mirror is catching up after the 1.0.50 release.",
-		"tag": "status",
-		"level": "warning"
+		"content": "Our mirror is catching up after the 1.0.50 release.",
+		"tags": ["status"],
+		"level": 1
 	}'
 ```
 
-Returns `201` with the full record including `id`, `createdAt`, and `archived: false`.
+Returns `201` with the full record. `id`, `created_at`, and `archived_at: null` are filled in by the server.
 
 ## Update
 
@@ -45,10 +66,10 @@ Returns `201` with the full record including `id`, `createdAt`, and `archived: f
 curl -X PATCH https://api.reseam.app/v1/announcements/42 \
 	-H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d '{ "archived": true }'
+	-d '{ "archived_at": "2026-04-19T12:00:00Z" }'
 ```
 
-Only the fields you send are changed. Set `archived: true` to hide from the default list without deleting.
+Only the fields you send are changed. Archive with `archived_at` set to an ISO timestamp; unarchive by setting it back to `null`. `tags` replaces the full tag set.
 
 ## List
 
@@ -58,7 +79,7 @@ curl "https://api.reseam.app/v1/announcements?tag=status"
 curl "https://api.reseam.app/v1/announcements?archived=true"
 ```
 
-`GET /v1/announcements` hides archived entries by default. Pass `?archived=true` to include them.
+`GET /v1/announcements` hides archived entries by default. Pass `?archived=true` to include them. The `tag` query parameter is singular and matches on a single tag name (case-insensitive).
 
 ## Delete
 
@@ -67,7 +88,7 @@ curl -X DELETE https://api.reseam.app/v1/announcements/42 \
 	-H "Authorization: Bearer $ADMIN_TOKEN"
 ```
 
-Returns `{ ok: true }`. Prefer archiving; deletes are permanent.
+Returns `{ "ok": true }`. Prefer archiving; deletes are permanent.
 
 ## Errors
 

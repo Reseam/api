@@ -40,7 +40,7 @@ Reseam Manager only ever downloads from `api.reseam.app` URLs. The redirect is w
 |--------|------|------|------|
 | `GET` | `/v1/announcements` | none | List. Filter with `?tag=…&archived=true`. |
 | `GET` | `/v1/announcements/:id` | none | One. |
-| `POST` | `/v1/announcements` | Bearer | `{ title, body, tag?, level? }` |
+| `POST` | `/v1/announcements` | Bearer | `{ title, content?, tags?, level?, author? }` |
 | `PATCH` | `/v1/announcements/:id` | Bearer | Partial update. |
 | `DELETE` | `/v1/announcements/:id` | Bearer | Remove. |
 
