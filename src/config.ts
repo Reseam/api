@@ -8,7 +8,6 @@ export type Config = {
   dbPath: string;
   cacheTtl: number;
   allowedOrigins: string[];
-  nodeEnv: string;
 };
 
 const DEFAULT_PATCHES_URL =
@@ -36,7 +35,6 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
     dbPath: env.DB_PATH || "./data/reseam.db",
     cacheTtl: readInt(env.CACHE_TTL, 300),
     allowedOrigins: splitList(env.ALLOWED_ORIGINS || DEFAULT_ALLOWED_ORIGINS),
-    nodeEnv: env.NODE_ENV || "development",
   };
 }
 

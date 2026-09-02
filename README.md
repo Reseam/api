@@ -43,7 +43,7 @@ docker compose up -d
 
 Announcement writes require `Authorization: Bearer <ADMIN_TOKEN>`.
 
-All GET responses include `Cache-Control` and `ETag` headers. OpenAPI docs at `/openapi` outside production.
+All GET responses include `Cache-Control` and `ETag` headers. OpenAPI docs at `/openapi`.
 
 ## Stack
 
