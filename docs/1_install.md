@@ -46,4 +46,4 @@ The server runs pending migrations on boot, so you rarely need `db:migrate` manu
 
 ## Health check
 
-`GET /v1/health` returns `{ ok: true, version }`. Use it for Docker healthchecks and uptime monitors. It does not hit the upstream or the database.
+`GET /v1/health` returns `{ ok: true, version }`. Use it for Docker healthchecks and uptime monitors.
