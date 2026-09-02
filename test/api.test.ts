@@ -1,7 +1,8 @@
 import { describe, expect, it } from "bun:test";
 import { createApp } from "../src/app";
 import type { Config } from "../src/config";
-import { openDatabase } from "../src/db/client";
+import { openDatabase, type DrizzleDb } from "../src/db/client";
+import { tags } from "../src/db/schema";
 
 const releaseFile = {
   bundle: {
@@ -40,7 +41,6 @@ const config: Config = {
   dbPath: ":memory:",
   cacheTtl: 300,
   allowedOrigins: [],
-  nodeEnv: "test",
 };
 
 function mockFetch(fn: () => Promise<Response>): typeof fetch {
@@ -49,11 +49,11 @@ function mockFetch(fn: () => Promise<Response>): typeof fetch {
 
 const okFetcher = mockFetch(async () => Response.json(releaseFile));
 
-function testApp(fetcher?: typeof fetch) {
+function testApp(options: { fetcher?: typeof fetch; config?: Partial<Config>; db?: DrizzleDb } = {}) {
   return createApp({
-    config,
-    fetcher: fetcher ?? okFetcher,
-    db: openDatabase(":memory:"),
+    config: { ...config, ...options.config },
+    fetcher: options.fetcher ?? okFetcher,
+    db: options.db ?? openDatabase(":memory:"),
     version: "test",
   });
 }
@@ -82,6 +82,17 @@ describe("Patches", () => {
     expect(body.release.version).toBe("v2.0.0");
     expect(res.headers.get("etag")).toStartWith('"');
     expect(res.headers.get("cache-control")).toContain("s-maxage=300");
+  });
+
+  it("returns 304 when the ETag matches", async () => {
+    const app = testApp();
+    const first = await app.handle(req("/v1/patches"));
+    const res = await app.handle(
+      req("/v1/patches", { headers: { "If-None-Match": first.headers.get("etag")! } }),
+    );
+    expect(res.status).toBe(304);
+    expect(res.headers.get("etag")).toBe(first.headers.get("etag"));
+    expect(await res.text()).toBe("");
   });
 
   it("returns prerelease", async () => {
@@ -277,18 +288,100 @@ describe("Announcements", () => {
   it("returns 404 for missing announcement", async () => {
     expect((await testApp().handle(req("/v1/announcements/9999"))).status).toBe(404);
   });
+
+  it("hides archived announcements unless requested", async () => {
+    const app = testApp();
+    const created = await (await app.handle(
+      req("/v1/announcements", { method: "POST", headers: { ...auth, ...json }, body: JSON.stringify({ title: "Old" }) }),
+    )).json();
+
+    const patchRes = await app.handle(
+      req(`/v1/announcements/${created.id}`, {
+        method: "PATCH",
+        headers: { ...auth, ...json },
+        body: JSON.stringify({ archived_at: "2026-01-01T00:00:00Z" }),
+      }),
+    );
+    expect((await patchRes.json()).archived_at).toBe("2026-01-01T00:00:00Z");
+
+    expect(await (await app.handle(req("/v1/announcements"))).json()).toEqual([]);
+    expect(await (await app.handle(req("/v1/announcements?archived=true"))).json()).toHaveLength(1);
+  });
+
+  it("removes tags no announcement references", async () => {
+    const db = openDatabase(":memory:");
+    const app = testApp({ db });
+    const post = (title: string, tagList: string[]) =>
+      app.handle(req("/v1/announcements", { method: "POST", headers: { ...auth, ...json }, body: JSON.stringify({ title, tags: tagList }) }));
+    const tagNames = () => db.select({ name: tags.name }).from(tags).all().map((t) => t.name).sort();
+
+    const a = await (await post("A", ["shared", "only-a"])).json();
+    await post("B", ["shared"]);
+    expect(tagNames()).toEqual(["only-a", "shared"]);
+
+    await app.handle(
+      req(`/v1/announcements/${a.id}`, { method: "PATCH", headers: { ...auth, ...json }, body: JSON.stringify({ tags: ["renamed"] }) }),
+    );
+    expect(tagNames()).toEqual(["renamed", "shared"]);
+
+    await app.handle(req(`/v1/announcements/${a.id}`, { method: "DELETE", headers: auth }));
+    expect(tagNames()).toEqual(["shared"]);
+  });
+
+  it("returns a readable validation error", async () => {
+    const res = await testApp().handle(req("/v1/announcements?archived=1"));
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toMatch(/^Invalid query: \/archived /);
+  });
+
+  it("refuses writes when no admin token is configured", async () => {
+    const res = await testApp({ config: { adminToken: "" } }).handle(
+      req("/v1/announcements", { method: "POST", headers: { ...auth, ...json }, body: JSON.stringify({ title: "Nope" }) }),
+    );
+    expect(res.status).toBe(503);
+  });
 });
 
-describe("Upstream errors", () => {
+describe("Upstream", () => {
   it("returns 502 when upstream fails", async () => {
-    const res = await testApp(mockFetch(async () => new Response("error", { status: 500 })))
+    const res = await testApp({ fetcher: mockFetch(async () => new Response("error", { status: 500 })) })
       .handle(req("/v1/patches"));
     expect(res.status).toBe(502);
   });
 
   it("returns 502 when upstream returns invalid data", async () => {
-    const res = await testApp(mockFetch(async () => Response.json({ invalid: true })))
+    const res = await testApp({ fetcher: mockFetch(async () => Response.json({ invalid: true })) })
       .handle(req("/v1/patches"));
     expect(res.status).toBe(502);
+  });
+
+  it("serves the last good release when a refresh fails", async () => {
+    let calls = 0;
+    const fetcher = mockFetch(async () =>
+      calls++ === 0 ? Response.json(releaseFile) : new Response("error", { status: 500 }),
+    );
+    const app = testApp({ fetcher, config: { cacheTtl: 0 } });
+
+    expect((await app.handle(req("/v1/patches"))).status).toBe(200);
+    const res = await app.handle(req("/v1/patches"));
+    expect(res.status).toBe(200);
+    expect((await res.json()).release.version).toBe("v2.0.0");
+    expect(calls).toBe(2);
+  });
+
+  it("fetches upstream once for concurrent requests", async () => {
+    let calls = 0;
+    const fetcher = mockFetch(async () => {
+      calls++;
+      await Bun.sleep(20);
+      return Response.json(releaseFile);
+    });
+    const app = testApp({ fetcher });
+
+    const responses = await Promise.all(
+      ["/v1/patches", "/v1/patches/version", "/patches.json"].map((path) => app.handle(req(path))),
+    );
+    expect(responses.map((r) => r.status)).toEqual([200, 200, 200]);
+    expect(calls).toBe(1);
   });
 });

@@ -8,6 +8,7 @@
         "@elysiajs/bearer": "^1.4.3",
         "@elysiajs/cors": "^1.4.1",
         "@elysiajs/openapi": "^1.4.14",
+        "@sinclair/typebox": "^0.34.49",
         "drizzle-orm": "^0.45.2",
         "elysia": "^1.4.28",
       },

@@ -1,5 +1,7 @@
 import { bearer } from "@elysiajs/bearer";
 import { Elysia, t } from "elysia";
+import { safeEqual } from "../auth";
+import { httpCache } from "../cache";
 import type { Config } from "../config";
 import type { DrizzleDb } from "../db/client";
 import {
@@ -19,21 +21,18 @@ import {
   UpdateAnnouncementSchema,
 } from "../schemas/announcements";
 import { ErrorSchema } from "../schemas/releases";
-import { safeEqual, setCacheHeaders } from "../utils";
 
 export function announcementsRoutes(config: Config, db: DrizzleDb) {
   return new Elysia({ prefix: "/v1/announcements", tags: ["Announcements"] })
     .use(bearer())
+    .use(httpCache(config.cacheTtl))
     .get(
       "/",
-      ({ query, set }) => {
-        const body = listAnnouncements(db, {
+      ({ query }) =>
+        listAnnouncements(db, {
           tag: query.tag,
           includeArchived: query.archived === true,
-        });
-        setCacheHeaders(set, config.cacheTtl, body);
-        return body;
-      },
+        }),
       {
         query: AnnouncementQuerySchema,
         response: { 200: AnnouncementListSchema },
@@ -41,11 +40,10 @@ export function announcementsRoutes(config: Config, db: DrizzleDb) {
     )
     .get(
       "/:id",
-      ({ params, set }) => {
-        const body = getAnnouncement(db, params.id);
-        if (!body) throw new ApiError(404, "Announcement not found");
-        setCacheHeaders(set, config.cacheTtl, body);
-        return body;
+      ({ params }) => {
+        const announcement = getAnnouncement(db, params.id);
+        if (!announcement) throw new ApiError(404, "Announcement not found");
+        return announcement;
       },
       {
         params: t.Object({ id: t.Number({ minimum: 1 }) }),

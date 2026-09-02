@@ -58,11 +58,12 @@ export function createApp(options: AppOptions = {}) {
     )
     .onError(({ code, error, status }) => {
       if (error instanceof ApiError) {
-        return status(error.statusCode as 400, { error: error.message });
+        return status(error.statusCode, { error: error.message });
       }
 
       if (code === "VALIDATION") {
-        return status(400, { error: error.message });
+        const details = error.all.map((e) => `${e.path} ${e.message}`).join("; ");
+        return status(400, { error: `Invalid ${error.type}: ${details}` });
       }
 
       if (code === "NOT_FOUND") {

@@ -1,13 +1,11 @@
-import { eq, and, desc, sql, inArray } from "drizzle-orm";
-import type { BunSQLiteDatabase } from "drizzle-orm/bun-sqlite";
+import { eq, and, desc, sql, inArray, isNull, notInArray } from "drizzle-orm";
+import type { DrizzleDb } from "./client";
 import { announcements, tags, announcementTags } from "./schema";
 import type {
   Announcement,
   CreateAnnouncement,
   UpdateAnnouncement,
 } from "../schemas/announcements";
-
-type Db = BunSQLiteDatabase<typeof import("./schema")>;
 
 const tagAggregate = sql<string>`COALESCE(json_group_array(${tags.name}) FILTER (WHERE ${tags.name} IS NOT NULL), '[]')`;
 
@@ -33,7 +31,7 @@ function mapRow(row: {
   };
 }
 
-function announcementQuery(db: Db) {
+function announcementQuery(db: DrizzleDb) {
   return db
     .select({
       id: announcements.id,
@@ -52,15 +50,13 @@ function announcementQuery(db: Db) {
 }
 
 export function listAnnouncements(
-  db: Db,
+  db: DrizzleDb,
   options: { tag?: string; includeArchived: boolean },
 ) {
   const normalizedTag = options.tag?.trim().toLowerCase() || null;
 
-  const conditions = [
-    options.includeArchived ? undefined : sql`${announcements.archivedAt} IS NULL`,
-  ];
-
+  const conditions = [];
+  if (!options.includeArchived) conditions.push(isNull(announcements.archivedAt));
   if (normalizedTag) {
     conditions.push(
       sql`EXISTS (
@@ -73,14 +69,14 @@ export function listAnnouncements(
   }
 
   const rows = announcementQuery(db)
-    .where(and(...conditions.filter(Boolean)))
+    .where(and(...conditions))
     .orderBy(desc(announcements.createdAt), desc(announcements.id))
     .all();
 
   return rows.map(mapRow);
 }
 
-export function getAnnouncement(db: Db, id: number) {
+export function getAnnouncement(db: DrizzleDb, id: number) {
   const row = announcementQuery(db)
     .where(eq(announcements.id, id))
     .get();
@@ -88,7 +84,7 @@ export function getAnnouncement(db: Db, id: number) {
   return row ? mapRow(row) : null;
 }
 
-export function createAnnouncement(db: Db, input: CreateAnnouncement) {
+export function createAnnouncement(db: DrizzleDb, input: CreateAnnouncement) {
   return db.transaction((tx) => {
     const now = new Date().toISOString();
     const [{ id }] = tx
@@ -109,7 +105,7 @@ export function createAnnouncement(db: Db, input: CreateAnnouncement) {
 }
 
 export function updateAnnouncement(
-  db: Db,
+  db: DrizzleDb,
   id: number,
   input: UpdateAnnouncement,
 ) {
@@ -124,26 +120,30 @@ export function updateAnnouncement(
     if (input.level !== undefined) patch.level = input.level;
     if (input.archived_at !== undefined) patch.archivedAt = input.archived_at;
 
-    tx.update(announcements)
-      .set(patch)
-      .where(eq(announcements.id, id))
-      .run();
+    if (Object.keys(patch).length > 0)
+      tx.update(announcements)
+        .set(patch)
+        .where(eq(announcements.id, id))
+        .run();
 
     if (input.tags) setTags(tx, id, input.tags);
     return getAnnouncement(tx, id);
   });
 }
 
-export function removeAnnouncement(db: Db, id: number) {
-  const result = db
-    .delete(announcements)
-    .where(eq(announcements.id, id))
-    .returning({ id: announcements.id })
-    .get();
-  return result !== undefined;
+export function removeAnnouncement(db: DrizzleDb, id: number) {
+  return db.transaction((tx) => {
+    const result = tx
+      .delete(announcements)
+      .where(eq(announcements.id, id))
+      .returning({ id: announcements.id })
+      .get();
+    pruneTags(tx);
+    return result !== undefined;
+  });
 }
 
-function setTags(db: Db, announcementId: number, raw: string[]) {
+function setTags(db: DrizzleDb, announcementId: number, raw: string[]) {
   db.delete(announcementTags)
     .where(eq(announcementTags.announcementId, announcementId))
     .run();
@@ -151,21 +151,35 @@ function setTags(db: Db, announcementId: number, raw: string[]) {
   const unique = [
     ...new Set(raw.map((t) => t.trim().toLowerCase()).filter(Boolean)),
   ];
-  if (unique.length === 0) return;
 
-  db.insert(tags)
-    .values(unique.map((name) => ({ name })))
-    .onConflictDoNothing()
-    .run();
+  if (unique.length > 0) {
+    db.insert(tags)
+      .values(unique.map((name) => ({ name })))
+      .onConflictDoNothing()
+      .run();
 
-  const tagRows = db
-    .select({ id: tags.id })
-    .from(tags)
-    .where(inArray(tags.name, unique))
-    .all();
+    const tagRows = db
+      .select({ id: tags.id })
+      .from(tags)
+      .where(inArray(tags.name, unique))
+      .all();
 
-  db.insert(announcementTags)
-    .values(tagRows.map((tag) => ({ announcementId, tagId: tag.id })))
-    .onConflictDoNothing()
+    db.insert(announcementTags)
+      .values(tagRows.map((tag) => ({ announcementId, tagId: tag.id })))
+      .onConflictDoNothing()
+      .run();
+  }
+
+  pruneTags(db);
+}
+
+function pruneTags(db: DrizzleDb) {
+  db.delete(tags)
+    .where(
+      notInArray(
+        tags.id,
+        db.select({ id: announcementTags.tagId }).from(announcementTags),
+      ),
+    )
     .run();
 }

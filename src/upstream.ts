@@ -12,7 +12,7 @@ type CachedReleaseFile = {
 
 export function createUpstream(config: Config, fetcher: typeof fetch = fetch) {
   const cache = new Map<ReleaseSource, CachedReleaseFile>();
-  const inflight = new Map<ReleaseSource, Promise<CachedReleaseFile>>();
+  const inflight = new Map<ReleaseSource, Promise<ReleaseFile>>();
 
   async function load(source: ReleaseSource, url: string): Promise<ReleaseFile> {
     if (!url)
@@ -25,22 +25,19 @@ export function createUpstream(config: Config, fetcher: typeof fetch = fetch) {
     if (!pending) {
       pending = fetchRelease(source, url)
         .then((data) => {
-          const entry: CachedReleaseFile = {
-            data,
-            expiresAt: Date.now() + config.cacheTtl * 1000,
-          };
-          cache.set(source, entry);
-          inflight.delete(source);
-          return entry;
+          cache.set(source, { data, expiresAt: Date.now() + config.cacheTtl * 1000 });
+          return data;
         })
-        .catch((err) => {
-          inflight.delete(source);
-          throw err;
-        });
+        .finally(() => inflight.delete(source));
       inflight.set(source, pending);
     }
 
-    return (await pending).data;
+    try {
+      return await pending;
+    } catch (err) {
+      if (cached) return cached.data;
+      throw err;
+    }
   }
 
   async function fetchRelease(source: ReleaseSource, url: string): Promise<ReleaseFile> {
@@ -63,7 +60,7 @@ export function createUpstream(config: Config, fetcher: typeof fetch = fetch) {
       );
     }
 
-    return json as ReleaseFile;
+    return json;
   }
 
   return {
