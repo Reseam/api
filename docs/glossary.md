@@ -13,7 +13,7 @@ description: Terms used across the API, bundles, and clients.
 
 **Patch**: a single change applied to an app. "Block ads", "force AMOLED dark", "unlock background playback". Patches live inside bundles.
 
-**Reseam Manager**: the Android app users install. Reads from the API, applies patches on-device, and hands the resulting APK to Android's installer.
+**Reseam Manager**: the app users install, on Android or desktop. Reads from the API, applies patches on the device, and hands the resulting APK to the installer.
 
 **Reseam CLI**: the command-line patch engine. What authors use to build bundles and what advanced users can use on their laptop.
 

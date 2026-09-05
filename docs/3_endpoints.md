@@ -14,7 +14,7 @@ All `GET` responses send `ETag` and `Cache-Control`. Browsers and clients that s
 | `GET` | `/patches.json` | Verbatim upstream `patches.json`. |
 | `GET` | `/manager.json` | Verbatim upstream `manager.json`. |
 
-The byte-for-byte response is important: the bundle signature is computed over the file, so any reformatting would break verification.
+The file is passed through unchanged, so what a client fetches here is exactly what the author published.
 
 ## Structured release metadata
 

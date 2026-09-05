@@ -16,15 +16,15 @@ Every setting is an environment variable. Defaults assume the official Reseam de
 | `PATCHES_BUNDLE_BASE_URL` | `https://git.reseam.app/reseam/patches/releases/download` | Base URL the `/patches/:tag/:name` route redirects to. |
 | `MANAGER_BINARY_BASE_URL` | `https://git.reseam.app/reseam/manager/releases/download` | Base URL the `/manager/:tag/:name` route redirects to. |
 
-Point `PATCHES_URL` at a `patches.json` you host. The URLs in that file's `bundle.assets` should reference the API's redirect routes (`https://api.reseam.app/patches/<tag>/<name>`) so end-clients only ever see `*.reseam.app`.
+Point `PATCHES_URL` at a `patches.json` you host. Each release's `download_url` in that file should reference the API's redirect route (`https://api.reseam.app/patches/<tag>/<name>`) so end-clients only ever see `*.reseam.app`.
 
 ## Server
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `PORT` | `4000` | HTTP port. |
-| `ALLOWED_ORIGINS` | `https://reseam.app,https://manager.reseam.app` | Comma-separated CORS allowlist. Set to `*` for public read-only deployments. |
-| `CACHE_TTL` | `300` | Seconds to cache upstream responses. Also sent as `Cache-Control: max-age`. |
+| `ALLOWED_ORIGINS` | `https://reseam.app,https://manager.reseam.app` | Comma-separated CORS allowlist. |
+| `CACHE_TTL` | `300` | Seconds to cache upstream responses. Also sent as `Cache-Control: public, s-maxage=<CACHE_TTL>, stale-while-revalidate=60`. |
 
 ## Storage
 

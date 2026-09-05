@@ -7,7 +7,7 @@ description: Run the API locally or with Docker.
 
 ## Docker
 
-The shipped `docker-compose.yml` runs the API on port 4000 with a `reseam-data` volume for the SQLite database.
+`docker-compose.yml` in the API repository builds the image and runs it on port 4000 with a `reseam-data` volume for the SQLite database.
 
 ```bash
 ADMIN_TOKEN=$(openssl rand -hex 32) docker compose up -d
