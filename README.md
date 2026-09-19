@@ -2,7 +2,7 @@
 
 Distribution metadata server for [Reseam](https://reseam.app), a Rust APK patching engine.
 
-Authors publish signed `.reseam` bundles and host a `patches.json` at a stable URL. This API reads that file (and a `manager.json` for manager binaries), caches it, and exposes it back out at `/patches.json` + `/manager.json` plus structured `/v1` JSON endpoints. `/patches/<tag>/<name>` and `/manager/<tag>/<name>` 302-redirect to the upstream asset so clients only ever see `*.reseam.app` URLs. The manager and website are the consumers.
+Authors publish signed `.reseam` bundles and host a `patches.json` at a stable URL. Each bundle release includes its publisher-generated patch catalog. This API reads that file (and a `manager.json` for manager binaries), caches it, and exposes it back out at `/patches.json` + `/manager.json` plus structured `/v1` JSON endpoints. `/patches/<tag>/<name>` and `/manager/<tag>/<name>` 302-redirect to the upstream asset so clients only ever see `*.reseam.app` URLs. The manager and website are the consumers.
 
 One instance fronts one bundle. Run multiple instances for multiple bundles. Signature verification happens in consumers: the API serves the public key but doesn't check signatures itself. The API holds a single secret: the admin token for announcement writes. Everything else is cached reads of upstream JSON.
 
