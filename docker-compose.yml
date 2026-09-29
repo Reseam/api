@@ -9,7 +9,6 @@ services:
       ADMIN_TOKEN: ${ADMIN_TOKEN}
       DB_PATH: /data/reseam.db
       CACHE_TTL: "300"
-      ALLOWED_ORIGINS: https://reseam.app,https://manager.reseam.app
     volumes:
       - reseam-data:/data
     ports:

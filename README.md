@@ -37,7 +37,6 @@ docker compose up -d
 | `ADMIN_TOKEN`              | empty; announcement writes return 503                                      |
 | `DB_PATH`                  | `./data/reseam.db`                                                         |
 | `CACHE_TTL`                | `300`                                                                      |
-| `ALLOWED_ORIGINS`          | `https://reseam.app,https://manager.reseam.app`                            |
 
 `PATCHES_URL` / `MANAGER_URL` are the upstream release-asset URLs the API fetches from. `PATCHES_BUNDLE_BASE_URL` / `MANAGER_BINARY_BASE_URL` are where `/patches/<tag>/<name>` and `/manager/<tag>/<name>` redirect to; download URLs in `patches.json` should point at the API's redirect routes so end-clients only see `*.reseam.app`.
 

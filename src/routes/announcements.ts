@@ -25,7 +25,7 @@ import { ErrorSchema } from "../schemas/releases";
 export function announcementsRoutes(config: Config, db: DrizzleDb) {
   return new Elysia({ prefix: "/v1/announcements", tags: ["Announcements"] })
     .use(bearer())
-    .use(httpCache(config.cacheTtl))
+    .use(httpCache("no-cache"))
     .get(
       "/",
       ({ query }) =>

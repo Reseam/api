@@ -7,7 +7,6 @@ export type Config = {
   adminToken: string;
   dbPath: string;
   cacheTtl: number;
-  allowedOrigins: string[];
 };
 
 const DEFAULT_PATCHES_URL =
@@ -18,7 +17,6 @@ const DEFAULT_PATCHES_BUNDLE_BASE_URL =
   "https://git.reseam.app/reseam/patches/releases/download";
 const DEFAULT_MANAGER_BINARY_BASE_URL =
   "https://git.reseam.app/reseam/manager/releases/download";
-const DEFAULT_ALLOWED_ORIGINS = "https://reseam.app,https://manager.reseam.app";
 
 export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
   return {
@@ -34,7 +32,6 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
     adminToken: env.ADMIN_TOKEN || "",
     dbPath: env.DB_PATH || "./data/reseam.db",
     cacheTtl: readInt(env.CACHE_TTL, 300),
-    allowedOrigins: splitList(env.ALLOWED_ORIGINS || DEFAULT_ALLOWED_ORIGINS),
   };
 }
 
@@ -47,11 +44,4 @@ function readInt(value: string | undefined, fallback: number) {
 
   const parsed = Number.parseInt(value, 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
-}
-
-function splitList(value: string) {
-  return value
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
 }

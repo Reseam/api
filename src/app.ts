@@ -27,7 +27,8 @@ export function createApp(options: AppOptions = {}) {
   return new Elysia()
     .use(
       cors({
-        origin: config.allowedOrigins.length ? config.allowedOrigins : true,
+        origin: "*",
+        credentials: false,
         methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
         allowedHeaders: ["Content-Type", "Authorization"],
         exposeHeaders: ["ETag"],

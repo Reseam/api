@@ -1,5 +1,5 @@
 import { Elysia } from "elysia";
-import { httpCache } from "../cache";
+import { httpCache, sharedCache } from "../cache";
 import type { Config } from "../config";
 import { ApiError } from "../errors";
 import {
@@ -23,7 +23,7 @@ export function createReleaseRoutes(
   load: ReleaseLoader,
 ) {
   return new Elysia({ prefix, tags: [tag] })
-    .use(httpCache(config.cacheTtl))
+    .use(httpCache(sharedCache(config.cacheTtl)))
     .get(
       "/",
       async () => {

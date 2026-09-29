@@ -23,7 +23,6 @@ Point `PATCHES_URL` at a `patches.json` you host. Each release's `download_url` 
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `PORT` | `4000` | HTTP port. |
-| `ALLOWED_ORIGINS` | `https://reseam.app,https://manager.reseam.app` | Comma-separated CORS allowlist. |
 | `CACHE_TTL` | `300` | Seconds to cache upstream responses. Also sent as `Cache-Control: public, s-maxage=<CACHE_TTL>, stale-while-revalidate=60`. |
 
 ## Storage

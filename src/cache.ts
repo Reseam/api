@@ -1,9 +1,10 @@
 import { createHash } from "node:crypto";
 import { Elysia } from "elysia";
 
-export function httpCache(ttl: number) {
-  const cacheControl = `public, s-maxage=${ttl}, stale-while-revalidate=60`;
+export const sharedCache = (ttl: number) =>
+  `public, s-maxage=${ttl}, stale-while-revalidate=60`;
 
+export function httpCache(cacheControl: string) {
   return new Elysia().onAfterHandle(
     { as: "scoped" },
     ({ request, set, response }) => {

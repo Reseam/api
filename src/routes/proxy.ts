@@ -1,5 +1,5 @@
 import { Elysia, t } from "elysia";
-import { httpCache } from "../cache";
+import { httpCache, sharedCache } from "../cache";
 import type { Config } from "../config";
 import { ApiError } from "../errors";
 import type { Upstream } from "../upstream";
@@ -12,7 +12,7 @@ function assertAsset(value: string, field: string) {
 
 export function proxyRoutes(config: Config, upstream: Upstream) {
   return new Elysia({ tags: ["Proxy"] })
-    .use(httpCache(config.cacheTtl))
+    .use(httpCache(sharedCache(config.cacheTtl)))
     .get("/patches.json", () => upstream.patches())
     .get("/manager.json", () => upstream.manager())
     .get(

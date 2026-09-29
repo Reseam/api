@@ -40,7 +40,6 @@ const config: Config = {
   adminToken: "secret",
   dbPath: ":memory:",
   cacheTtl: 300,
-  allowedOrigins: [],
 };
 
 function mockFetch(fn: () => Promise<Response>): typeof fetch {
@@ -201,10 +200,21 @@ describe("Proxy", () => {
   });
 });
 
+describe("CORS", () => {
+  it("allows any origin so shared caches can serve one copy to every caller", async () => {
+    for (const headers of [{}, { Origin: "https://reseam.app" }] as HeadersInit[]) {
+      const res = await testApp().handle(req("/v1/patches", { headers }));
+      expect(res.headers.get("access-control-allow-origin")).toBe("*");
+      expect(res.headers.get("access-control-allow-credentials")).toBeNull();
+    }
+  });
+});
+
 describe("Announcements", () => {
   it("starts empty", async () => {
     const res = await testApp().handle(req("/v1/announcements"));
     expect(res.status).toBe(200);
+    expect(res.headers.get("cache-control")).toBe("no-cache");
     expect(await res.json()).toEqual([]);
   });
 
