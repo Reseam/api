@@ -1,7 +1,7 @@
-import { cors } from "@elysiajs/cors";
 import { openapi } from "@elysiajs/openapi";
 import { Elysia } from "elysia";
 import { readConfig, type Config } from "./config";
+import { publicCors } from "./cors";
 import { openDatabase, type DrizzleDb } from "./db/client";
 import { ApiError } from "./errors";
 import { announcementsRoutes } from "./routes/announcements";
@@ -25,16 +25,7 @@ export function createApp(options: AppOptions = {}) {
   const version = options.version ?? "0.0.0";
 
   return new Elysia()
-    .use(
-      cors({
-        origin: "*",
-        credentials: false,
-        methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-        allowedHeaders: ["Content-Type", "Authorization"],
-        exposeHeaders: ["ETag"],
-        maxAge: 300,
-      }),
-    )
+    .use(publicCors)
     .use(
       openapi({
         documentation: {
