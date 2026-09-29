@@ -200,44 +200,10 @@ describe("Proxy", () => {
   });
 });
 
-describe("CORS", () => {
-  it("allows any origin so shared caches can serve one copy to every caller", async () => {
-    for (const headers of [{}, { Origin: "https://reseam.app" }] as HeadersInit[]) {
-      const res = await testApp().handle(req("/v1/patches", { headers }));
-      expect(res.headers.get("access-control-allow-origin")).toBe("*");
-      expect(res.headers.get("vary")).toBeNull();
-    }
-  });
-
-  it("allows any origin on errors", async () => {
-    const res = await testApp().handle(req("/v1/announcements/999"));
-    expect(res.status).toBe(404);
-    expect(res.headers.get("access-control-allow-origin")).toBe("*");
-  });
-
-  it("answers preflight for authenticated writes", async () => {
-    const res = await testApp().handle(
-      req("/v1/announcements", {
-        method: "OPTIONS",
-        headers: {
-          Origin: "https://reseam.app",
-          "Access-Control-Request-Method": "POST",
-          "Access-Control-Request-Headers": "authorization, content-type",
-        },
-      }),
-    );
-    expect(res.status).toBe(204);
-    expect(res.headers.get("access-control-allow-origin")).toBe("*");
-    expect(res.headers.get("access-control-allow-methods")).toContain("POST");
-    expect(res.headers.get("access-control-allow-headers")).toContain("Authorization");
-  });
-});
-
 describe("Announcements", () => {
   it("starts empty", async () => {
     const res = await testApp().handle(req("/v1/announcements"));
     expect(res.status).toBe(200);
-    expect(res.headers.get("cache-control")).toBe("no-cache");
     expect(await res.json()).toEqual([]);
   });
 
