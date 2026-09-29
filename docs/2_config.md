@@ -23,7 +23,7 @@ Point `PATCHES_URL` at a `patches.json` you host. Each release's `download_url` 
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `PORT` | `4000` | HTTP port. |
-| `CACHE_TTL` | `300` | Seconds to cache upstream responses. Also sent as `Cache-Control: public, s-maxage=<CACHE_TTL>, stale-while-revalidate=60`. |
+| `CACHE_TTL` | `300` | Seconds to cache upstream responses. Also sent on release endpoints as `Cache-Control: public, s-maxage=<CACHE_TTL>, stale-while-revalidate=60`. Announcements are always `no-cache`. |
 
 ## Storage
 
@@ -36,7 +36,7 @@ Point `PATCHES_URL` at a `patches.json` you host. Each release's `download_url` 
 
 ## CACHE_TTL tuning
 
-- **Low (60–120s):** announcements feel live, upstream gets hit more often.
+- **Low (60–120s):** releases show up sooner, upstream gets hit more often.
 - **Default (300s):** good for the official bundle; new releases show up within 5 minutes.
 - **High (3600s):** use when upstream is slow or rate-limited. Clients still see `ETag` so 304s work.
 

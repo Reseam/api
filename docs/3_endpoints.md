@@ -5,7 +5,7 @@ description: The HTTP surface the API exposes.
 
 # Endpoints
 
-All `GET` responses send `ETag` and `Cache-Control`. Browsers and clients that send `If-None-Match` get a `304`.
+All `GET` responses send `ETag` and `Cache-Control`: release endpoints are shared-cacheable for `CACHE_TTL`, announcements are `no-cache` so caches revalidate them on every request. Browsers and clients that send `If-None-Match` get a `304`. CORS allows any origin.
 
 ## Raw indexes
 
