@@ -5,7 +5,7 @@ description: What the Reseam API is and what it does.
 
 # Overview
 
-The Reseam API is a thin metadata server. It sits between a bundle author's hosted `patches.json` and the clients that read it: Reseam Manager on a phone, and the website at [reseam.app](https://reseam.app).
+The Reseam API is a thin metadata server. It sits between a bundle author's hosted `patches.json` and the clients that read it: Reseam Manager and the website at [reseam.app](https://reseam.app).
 
 One API instance fronts one bundle. Run multiple instances for multiple bundles.
 

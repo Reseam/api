@@ -12,7 +12,7 @@ Every setting is an environment variable. Defaults assume the official Reseam de
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `PATCHES_URL` | `https://git.reseam.app/reseam/patches/releases/download/latest/patches.json` | Where the API fetches the patches index from. |
-| `MANAGER_URL` | `https://git.reseam.app/reseam/manager/releases/download/latest/manager.json` | Where the API fetches the manager index from. |
+| `MANAGER_URL` | `https://git.reseam.app/reseam/manager/releases/download/latest/manager.json` | Where the API fetches the Reseam Manager index from. |
 | `PATCHES_BUNDLE_BASE_URL` | `https://git.reseam.app/reseam/patches/releases/download` | Base URL the `/patches/:tag/:name` route redirects to. |
 | `MANAGER_BINARY_BASE_URL` | `https://git.reseam.app/reseam/manager/releases/download` | Base URL the `/manager/:tag/:name` route redirects to. |
 
