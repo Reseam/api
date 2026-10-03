@@ -1,21 +1,20 @@
 ---
 title: Overview
-description: What the Reseam API is and what it does.
+description: What the Reseam API serves, and who uses it.
 ---
 
 # Overview
 
-The Reseam API is a thin metadata server. It sits between a bundle author's hosted `patches.json` and the clients that read it: Reseam Manager and the website at [reseam.app](https://reseam.app).
+The Reseam API is a small server behind `api.reseam.app`. It tells Reseam Manager and the website which releases exist, where to download them, and what announcements to show. You only need these pages to run your own instance.
 
-One API instance fronts one bundle. Run multiple instances for multiple bundles.
+![The API fetches and caches one patches.json and one manager.json, serves them and their download links to Reseam Manager and the website, and keeps announcements in SQLite. Third-party bundles don't go through it; Reseam Manager reads their patches.json directly.](architecture.svg)
 
-## What it does
+It does three things:
 
-- Reads `patches.json` and `manager.json` from upstream URLs.
-- Caches them in memory.
-- Serves them at `/patches.json` and `/manager.json`.
-- Exposes structured `/v1/patches` and `/v1/manager` JSON for clients that want typed data, including the publisher-generated catalog on patch releases.
-- Redirects `/patches/<tag>/<name>` and `/manager/<tag>/<name>` to the upstream asset so clients only ever see `*.reseam.app` URLs.
-- Stores announcements in SQLite behind a bearer token.
+- **Release indexes.** It fetches one `patches.json` and one `manager.json`, checks them, caches them, and serves them as is and as simple JSON endpoints, such as "the latest stable release".
+- **Download links.** `/patches/<tag>/<file>` and `/manager/<tag>/<file>` redirect to where the files are hosted, so clients keep working when hosting moves.
+- **Announcements.** Short messages stored in SQLite. Anyone can read them; writing needs an admin token.
 
-The API never opens a `.reseam` archive or executes patch code. Patch catalogs arrive in the upstream `patches.json` and pass through the same cache and validation as the rest of the release metadata.
+It never opens a bundle or runs patch code. Bundles from other publishers don't go through it: Reseam Manager reads their `patches.json` directly.
+
+Next: [Install](1_install.md).

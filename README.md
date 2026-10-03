@@ -1,49 +1,37 @@
-# Reseam API
+<p align="center">
+  <img src="https://reseam.app/logo.svg" alt="Reseam logo" width="96">
+</p>
 
-Distribution metadata server for [Reseam](https://reseam.app), a Rust APK patching engine.
+<h1 align="center">Reseam API</h1>
 
-Authors publish signed `.reseam` bundles and host a `patches.json` at a stable URL. Each bundle release includes its publisher-generated patch catalog. This API reads that file (and a `manager.json` for Reseam Manager releases), caches it, and exposes it back out at `/patches.json` + `/manager.json` plus structured `/v1` JSON endpoints. `/patches/<tag>/<name>` and `/manager/<tag>/<name>` 302-redirect to the upstream asset so clients only ever see `*.reseam.app` URLs. Reseam Manager and the website are the consumers.
+The server behind [api.reseam.app](https://api.reseam.app). It tells Reseam Manager and [reseam.app](https://reseam.app) which releases exist, where to download them, and which announcements to show.
 
-One instance fronts one bundle. Run multiple instances for multiple bundles. Signature verification happens in consumers: the API serves the public key but doesn't check signatures itself. The API holds a single secret: the admin token for announcement writes. Everything else is cached reads of upstream JSON.
+- **Release indexes.** Fetches one `patches.json` and one `manager.json`, caches them, and serves them as they are and as `/v1` JSON endpoints.
+- **Download links.** `/patches/<tag>/<file>` and `/manager/<tag>/<file>` redirect to where the files are hosted.
+- **Announcements.** Stored in SQLite. Anyone can read them; writing needs the admin token.
 
-Announcements are stored in SQLite behind bearer-authed write endpoints.
+It never opens a bundle or checks a signature. Reseam Manager does that. One instance serves one patch bundle.
 
-## Running
+Setup, configuration, and every endpoint are in the [API docs](https://reseam.app/docs/api/overview/) (source: [`docs/`](docs/)). OpenAPI docs are served at `/openapi`.
+
+## Develop
+
+Needs [Bun](https://bun.sh).
 
 ```bash
 bun install
-bun run dev          # dev server with watch
-bun test             # run tests
-bun run typecheck    # tsc --noEmit
-bun run db:generate  # generate migration from schema changes
-bun run start        # production server
+bun run dev          # server on port 4000, restarts on changes
+bun test
+bun run typecheck
+bun run db:generate  # migration after a schema change
 ```
 
-### Docker
+## Run
 
 ```bash
 docker compose up -d
 ```
 
-## Config
+This keeps the database in the `reseam-data` volume. Set `ADMIN_TOKEN` to turn on announcement writes. The other settings are in [Configuration](docs/2_config.md).
 
-| Var                        | Default                                                                    |
-| -------------------------- | -------------------------------------------------------------------------- |
-| `PORT`                     | `4000`                                                                     |
-| `PATCHES_URL`              | `https://git.reseam.app/reseam/patches/releases/download/latest/patches.json` |
-| `MANAGER_URL`              | `https://git.reseam.app/reseam/manager/releases/download/latest/manager.json` |
-| `PATCHES_BUNDLE_BASE_URL`  | `https://git.reseam.app/reseam/patches/releases/download`                  |
-| `MANAGER_BINARY_BASE_URL`  | `https://git.reseam.app/reseam/manager/releases/download`                  |
-| `ADMIN_TOKEN`              | empty; announcement writes return 503                                      |
-| `DB_PATH`                  | `./data/reseam.db`                                                         |
-| `CACHE_TTL`                | `300`                                                                      |
-
-`PATCHES_URL` / `MANAGER_URL` are the upstream release-asset URLs the API fetches from. `PATCHES_BUNDLE_BASE_URL` / `MANAGER_BINARY_BASE_URL` are where `/patches/<tag>/<name>` and `/manager/<tag>/<name>` redirect to; download URLs in `patches.json` should point at the API's redirect routes so end-clients only see `*.reseam.app`.
-
-Announcement writes require `Authorization: Bearer <ADMIN_TOKEN>`.
-
-All GET responses include `Cache-Control` and `ETag` headers. OpenAPI docs at `/openapi`.
-
-## Stack
-
-Bun, Elysia, drizzle-orm on SQLite.
+Built with Bun, Elysia, and Drizzle on SQLite.

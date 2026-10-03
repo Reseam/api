@@ -1,43 +1,28 @@
 ---
 title: Configuration
-description: Environment variables the API reads at startup.
+description: The environment variables the API reads.
 ---
 
 # Configuration
 
-Every setting is an environment variable. Defaults assume the official Reseam deployment.
+All settings are environment variables, read at startup.
 
-## Upstream
+| Variable | Default | |
+|---|---|---|
+| `PORT` | `4000` | port to listen on |
+| `PATCHES_URL` | official `patches.json` on git.reseam.app | the patch index to serve |
+| `MANAGER_URL` | official `manager.json` on git.reseam.app | the Reseam Manager index to serve |
+| `PATCHES_BUNDLE_BASE_URL` | `https://git.reseam.app/reseam/patches/releases/download` | where `/patches/<tag>/<file>` redirects |
+| `MANAGER_BINARY_BASE_URL` | `https://git.reseam.app/reseam/manager/releases/download` | where `/manager/<tag>/<file>` redirects |
+| `ADMIN_TOKEN` | empty | token for writing announcements; empty turns writing off |
+| `DB_PATH` | `./data/reseam.db` | SQLite database file |
+| `CACHE_TTL` | `300` | seconds to cache the indexes |
+| `VERSION` | `dev` | version shown by `/` and `/v1/health` |
 
-| Variable | Default | Purpose |
-|----------|---------|---------|
-| `PATCHES_URL` | `https://git.reseam.app/reseam/patches/releases/download/latest/patches.json` | Where the API fetches the patches index from. |
-| `MANAGER_URL` | `https://git.reseam.app/reseam/manager/releases/download/latest/manager.json` | Where the API fetches the Reseam Manager index from. |
-| `PATCHES_BUNDLE_BASE_URL` | `https://git.reseam.app/reseam/patches/releases/download` | Base URL the `/patches/:tag/:name` route redirects to. |
-| `MANAGER_BINARY_BASE_URL` | `https://git.reseam.app/reseam/manager/releases/download` | Base URL the `/manager/:tag/:name` route redirects to. |
+## Caching
 
-Point `PATCHES_URL` at a `patches.json` you host. Each release's `download_url` in that file should reference the API's redirect route (`https://api.reseam.app/patches/<tag>/<name>`) so end-clients only ever see `*.reseam.app`.
+The server keeps each index in memory for `CACHE_TTL` seconds. Requests arriving while it refreshes share one fetch. If a refresh fails, it keeps serving the last good copy.
 
-## Server
+Release endpoints send `Cache-Control: public, s-maxage=<CACHE_TTL>`, so a CDN in front can cache them too. Announcements send `no-cache`, so they are checked on every request. Both send an `ETag` and answer `304` when nothing changed.
 
-| Variable | Default | Purpose |
-|----------|---------|---------|
-| `PORT` | `4000` | HTTP port. |
-| `CACHE_TTL` | `300` | Seconds to cache upstream responses. Also sent on release endpoints as `Cache-Control: public, s-maxage=<CACHE_TTL>, stale-while-revalidate=60`. Announcements are always `no-cache`. |
-
-## Storage
-
-| Variable | Default | Purpose |
-|----------|---------|---------|
-| `DB_PATH` | `./data/reseam.db` | SQLite database for announcements. |
-| `ADMIN_TOKEN` | _(empty)_ | Bearer token for announcement writes. Empty → writes return `503`. |
-
-`ADMIN_TOKEN` is the only secret the API holds. Treat it like a root password. Read-only deploys can leave it empty.
-
-## CACHE_TTL tuning
-
-- **Low (60–120s):** releases show up sooner, upstream gets hit more often.
-- **Default (300s):** good for the official bundle; new releases show up within 5 minutes.
-- **High (3600s):** use when upstream is slow or rate-limited. Clients still see `ETag` so 304s work.
-
-The cache is in-memory and per-process. Restarting the server clears it. If a refresh fails after the TTL expires, the last good copy is served and the next request retries upstream.
+Next: [Endpoints](3_endpoints.md).
