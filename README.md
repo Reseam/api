@@ -35,3 +35,7 @@ docker compose up -d
 This keeps the database in the `reseam-data` volume. Set `ADMIN_TOKEN` to turn on announcement writes. The other settings are in [Configuration](docs/2_config.md).
 
 Built with Bun, Elysia, and Drizzle on SQLite.
+
+## License
+
+AGPL-3.0-or-later, with additional terms under section 7 in [NOTICE](NOTICE).

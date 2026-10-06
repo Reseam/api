@@ -1,6 +1,7 @@
 {
   "name": "api",
   "version": "1.0.50",
+  "license": "AGPL-3.0-or-later",
   "scripts": {
     "dev": "bun run --watch src/index.ts",
     "start": "bun run src/index.ts",
