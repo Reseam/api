@@ -10,10 +10,10 @@ All settings are environment variables, read at startup.
 | Variable | Default | |
 |---|---|---|
 | `PORT` | `4000` | port to listen on |
-| `PATCHES_URL` | official `patches.json` on git.reseam.app | the patch index to serve |
-| `MANAGER_URL` | official `manager.json` on git.reseam.app | the Reseam Manager index to serve |
-| `PATCHES_BUNDLE_BASE_URL` | `https://git.reseam.app/reseam/patches/releases/download` | where `/patches/<tag>/<file>` redirects |
-| `MANAGER_BINARY_BASE_URL` | `https://git.reseam.app/reseam/manager/releases/download` | where `/manager/<tag>/<file>` redirects |
+| `PATCHES_URL` | `https://cdn.reseam.app/patches/patches.json` | the patch index to serve |
+| `MANAGER_URL` | `https://cdn.reseam.app/manager/manager.json` | the Reseam Manager index to serve |
+| `PATCHES_BUNDLE_BASE_URL` | `https://cdn.reseam.app/patches` | where `/patches/<tag>/<file>` redirects |
+| `MANAGER_BINARY_BASE_URL` | `https://cdn.reseam.app/manager` | where `/manager/<tag>/<file>` redirects |
 | `ADMIN_TOKEN` | empty | token for writing announcements; empty turns writing off |
 | `DB_PATH` | `./data/reseam.db` | SQLite database file |
 | `CACHE_TTL` | `300` | seconds to cache the indexes |

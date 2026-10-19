@@ -22,9 +22,9 @@ Every route allows requests from any origin. Errors are JSON: `{ "error": "messa
 | `GET /v1/patches/history/prerelease` | `{ bundle, releases }`: every release, prereleases included |
 | `GET /v1/patches/keys` | `{ public_key }` of the bundle signer |
 
-"Latest" means the first matching entry in the index's `releases` list; `reseam publish` writes the newest first. These return `404` when no release matches.
+"Latest" means the first matching entry in the index's `releases` list; `reseam release` writes the newest first. These return `404` when no release matches.
 
-A `release` has `version`, `created_at`, `description`, `download_url`, `prerelease`, and, for patches, `patches`: every patch's name, description, apps, dependencies, and options. `bundle` has `name`, `author`, `description`, `homepage`, and `public_key`.
+A `release` has `version`, `created_at`, `description` (its release notes), `download_url`, `prerelease`, and, for the newest patches release and prerelease, `patches`: every patch's name, description, apps, dependencies, and options. Older releases in `history` have no `patches`. `bundle` has `name`, `author`, `description`, `homepage`, and `public_key`.
 
 ## Downloads
 

@@ -10,13 +10,13 @@ export type Config = {
 };
 
 const DEFAULT_PATCHES_URL =
-  "https://git.reseam.app/reseam/patches/releases/download/latest/patches.json";
+  "https://cdn.reseam.app/patches/patches.json";
 const DEFAULT_MANAGER_URL =
-  "https://git.reseam.app/reseam/manager/releases/download/latest/manager.json";
+  "https://cdn.reseam.app/manager/manager.json";
 const DEFAULT_PATCHES_BUNDLE_BASE_URL =
-  "https://git.reseam.app/reseam/patches/releases/download";
+  "https://cdn.reseam.app/patches";
 const DEFAULT_MANAGER_BINARY_BASE_URL =
-  "https://git.reseam.app/reseam/manager/releases/download";
+  "https://cdn.reseam.app/manager";
 
 export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
   return {
