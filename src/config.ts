@@ -43,7 +43,7 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
     requestsSecret: env.REQUESTS_SECRET || "",
     turnstileSecret: env.TURNSTILE_SECRET || "",
     openRouterApiKey: env.OPENROUTER_API_KEY || "",
-    screeningModel: env.SCREENING_MODEL || "~typesafe/jev-latest",
+    screeningModel: env.SCREENING_MODEL || "nace-ai/drex-max",
     relayUrl: stripTrailingSlash(env.RELAY_URL || ""),
     relaySecret: env.RELAY_SECRET || "",
   };

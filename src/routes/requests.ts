@@ -5,7 +5,7 @@ import { httpCache } from "../cache";
 import type { Config } from "../config";
 import type { DrizzleDb } from "../db/client";
 import { since } from "../db/counts";
-import { countRequests, createRequest, getRequest, listRequests, openRequests } from "../db/requests";
+import { countRequests, createRequest, getRequest, listRequests, screeningCandidates } from "../db/requests";
 import { addVote, countVotes, removeVote, report } from "../db/votes";
 import { ApiError } from "../errors";
 import type { Relay } from "../relay";
@@ -26,7 +26,6 @@ import { IdParams, requestAccess } from "./request-access";
 const REQUESTS_PER_VOTER_PER_DAY = 3;
 const REQUESTS_PER_ADDRESS_PER_DAY = 10;
 const VOTES_PER_REQUEST_PER_ADDRESS_PER_DAY = 3;
-const SCREENED_CANDIDATES = 100;
 
 type Services = { upstream: Upstream; screen?: Screener; relay: Relay };
 
@@ -64,7 +63,7 @@ export function requestsRoutes(config: Config, db: DrizzleDb, { upstream, screen
           throw new ApiError(429, "Too many requests today");
 
         const screening = screen &&
-          (await screen.request(body, openRequests(db, body.app, SCREENED_CANDIDATES), await packages()).catch((error: Error) => {
+          (await screen.request(body, screeningCandidates(db, body.app), await packages()).catch((error: Error) => {
             console.error(`screening: ${error.message}`);
             return undefined;
           }));

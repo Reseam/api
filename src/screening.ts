@@ -4,7 +4,8 @@ import type { Config } from "./config";
 
 const ENDPOINT = "https://openrouter.ai/api/v1/systemone";
 const SPAM_AT = 0.85;
-const DUPLICATE_AT = 0.85;
+// Drex Max catches the same duplicates anywhere from 0.05 to 0.30 and starts missing them above 0.40.
+const DUPLICATE_AT = 0.25;
 const APP_AT = 0.6;
 const NONE = "none";
 
@@ -19,7 +20,7 @@ const AnswersSchema = t.Object({
 const CommentAnswersSchema = t.Object({ answers: t.Object({ spam: t.Object({ noul: t.Number() }) }) });
 
 export type Submission = { title: string; body?: string; app?: string };
-export type Candidate = { id: number; title: string };
+export type Candidate = { id: number; title: string; body: string | null };
 export type Screening = { spam: boolean; duplicateOf: number | null; app: string | null };
 export type Screener = {
   request(submission: Submission, candidates: Candidate[], packages: string[]): Promise<Screening>;
@@ -51,8 +52,11 @@ export function createScreener(config: Config, fetcher: typeof fetch): Screener 
       ...(candidates.length > 0 && {
         duplicate: {
           type: "choice",
-          instructions: "Does the new request ask for the same thing as one of the open requests?",
-          criteria: choice(candidates.map(({ id, title }) => [String(id), title]), "It asks for something none of them ask for"),
+          instructions: "Does the new request ask for the same thing as one of the existing requests?",
+          criteria: choice(
+            candidates.map(({ id, title, body }) => [String(id), body ? `${title}\n\n${body}` : title]),
+            "It asks for something none of them ask for",
+          ),
         },
       }),
       ...(!submission.app && packages.length > 0 && {

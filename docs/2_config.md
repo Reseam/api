@@ -22,7 +22,7 @@ All settings are environment variables, read at startup.
 | `REQUESTS_SECRET` | empty | key for hashing client addresses; with `TURNSTILE_SECRET`, turns requests on |
 | `TURNSTILE_SECRET` | empty | Cloudflare Turnstile secret, checked before a voter token is issued |
 | `OPENROUTER_API_KEY` | empty | screens new requests with a decision model; empty posts them unchecked |
-| `SCREENING_MODEL` | `~typesafe/jev-latest` | the OpenRouter decision model that screens requests |
+| `SCREENING_MODEL` | `nace-ai/drex-max` | the OpenRouter decision model that screens requests |
 | `RELAY_URL` | empty | Reseam Relay to tell about new announcements and requests |
 | `RELAY_SECRET` | empty | shared secret that signs those notifications |
 

@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, inArray, like, ne, or, sql, type SQL } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, isNull, like, ne, or, sql, type SQL } from "drizzle-orm";
 import type { DrizzleDb } from "./client";
 import { countWhere } from "./counts";
 import { requestComments, requests, requestVotes } from "./schema";
@@ -44,13 +44,18 @@ export function getRequest(db: DrizzleDb, id: number): Request | undefined {
   return requestQuery(db).where(eq(requests.id, id)).get();
 }
 
-export function openRequests(db: DrizzleDb, app: string | undefined, limit: number) {
+/** Requests a new one may repeat: open, planned and shipped ones for its app or for no app, or all of them when it names none. */
+export function screeningCandidates(db: DrizzleDb, app: string | undefined) {
   return db
-    .select({ id: requests.id, title: requests.title })
+    .select({ id: requests.id, title: requests.title, body: requests.body })
     .from(requests)
-    .where(and(inArray(requests.status, ["open", "planned"]), app ? eq(requests.app, app) : undefined))
+    .where(
+      and(
+        inArray(requests.status, ["open", "planned", "shipped"]),
+        app ? or(eq(requests.app, app), isNull(requests.app)) : undefined,
+      ),
+    )
     .orderBy(desc(voteCount), desc(requests.createdAt))
-    .limit(limit)
     .all();
 }
 

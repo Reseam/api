@@ -54,13 +54,13 @@ One token posts at most 3 requests a day, one address at most 10.
 
 ## Screening
 
-With `OPENROUTER_API_KEY` set, each new request is checked by a decision model on OpenRouter (`SCREENING_MODEL`, Jev by default) before it is stored:
+With `OPENROUTER_API_KEY` set, each new request is checked by a decision model on OpenRouter (`SCREENING_MODEL`, Drex Max by default) before it is stored:
 
 - **Spam.** Spam, ads, abuse, and anything that isn't a request are stored as `hidden`.
-- **Duplicates.** If it asks for the same thing as an open request, the answer is `409` with that request as `duplicate`. Vote on it, or send the request again with `force: true`.
+- **Duplicates.** If it asks for the same thing as an open, planned, or shipped request, the answer is `409` with that request as `duplicate`. Vote on it, or send the request again with `force: true`.
 - **App.** A request without `app` gets the package of the app it is about, when the model is confident.
 
-The model sees only the title and body, and the titles of open requests. If it can't be reached, the request is posted without screening. Comments get the spam check too, with their request's title and body as context.
+The model sees the new request's title and body, and the title and body of every open, planned, and shipped request for the same app or for no app (every app's, when the new one names none). If it can't be reached, the request is posted without screening. Comments get the spam check too, with their request's title and body as context.
 
 ## Votes and reports
 
