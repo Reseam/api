@@ -4,11 +4,12 @@
 
 <h1 align="center">Reseam API</h1>
 
-The server behind [api.reseam.app](https://api.reseam.app). It tells Reseam Manager and [reseam.app](https://reseam.app) which releases exist, where to download them, and which announcements to show.
+The server behind [api.reseam.app](https://api.reseam.app). It tells Reseam Manager and [reseam.app](https://reseam.app) which releases exist, where to download them, and which announcements to show. It also holds patch requests and their votes.
 
-- **Release indexes.** Fetches one `patches.json` and one `manager.json`, caches them, and serves them as they are and as `/v1` JSON endpoints.
+- **Release indexes.** Fetches one `patches.json` and one `manager.json`, caches them, and serves them as they are.
 - **Download links.** `/patches/<tag>/<file>` and `/manager/<tag>/<file>` redirect to where the files are hosted.
 - **Announcements.** Stored in SQLite. Anyone can read them; writing needs the admin token.
+- **Requests.** Anyone posts and votes without an account, after a Turnstile check. New requests are screened by a decision model on OpenRouter.
 
 It never opens a bundle or checks a signature. Reseam Manager does that. One instance serves one patch bundle.
 

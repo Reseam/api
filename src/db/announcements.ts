@@ -1,4 +1,4 @@
-import { eq, and, desc, sql, inArray, isNull, notInArray } from "drizzle-orm";
+import { eq, desc, sql, inArray, isNull, notInArray } from "drizzle-orm";
 import type { DrizzleDb } from "./client";
 import { announcements, tags, announcementTags } from "./schema";
 import type {
@@ -49,31 +49,12 @@ function announcementQuery(db: DrizzleDb) {
     .groupBy(announcements.id);
 }
 
-export function listAnnouncements(
-  db: DrizzleDb,
-  options: { tag?: string; includeArchived: boolean },
-) {
-  const normalizedTag = options.tag?.trim().toLowerCase() || null;
-
-  const conditions = [];
-  if (!options.includeArchived) conditions.push(isNull(announcements.archivedAt));
-  if (normalizedTag) {
-    conditions.push(
-      sql`EXISTS (
-        SELECT 1 FROM ${announcementTags}
-        JOIN ${tags} ON ${tags.id} = ${announcementTags.tagId}
-        WHERE ${announcementTags.announcementId} = ${announcements.id}
-          AND ${tags.name} = ${normalizedTag}
-      )`,
-    );
-  }
-
-  const rows = announcementQuery(db)
-    .where(and(...conditions))
+export function listAnnouncements(db: DrizzleDb, options: { includeArchived: boolean }) {
+  return announcementQuery(db)
+    .where(options.includeArchived ? undefined : isNull(announcements.archivedAt))
     .orderBy(desc(announcements.createdAt), desc(announcements.id))
-    .all();
-
-  return rows.map(mapRow);
+    .all()
+    .map(mapRow);
 }
 
 export function getAnnouncement(db: DrizzleDb, id: number) {

@@ -7,8 +7,13 @@ services:
       PATCHES_BUNDLE_BASE_URL: https://cdn.reseam.app/patches
       MANAGER_BINARY_BASE_URL: https://cdn.reseam.app/manager
       ADMIN_TOKEN: ${ADMIN_TOKEN}
+      REQUESTS_SECRET: ${REQUESTS_SECRET}
+      TURNSTILE_SECRET: ${TURNSTILE_SECRET}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+      RELAY_URL: ${RELAY_URL}
+      RELAY_SECRET: ${RELAY_SECRET}
       DB_PATH: /data/reseam.db
-      CACHE_TTL: "300"
+      CACHE_TTL: "60"
     volumes:
       - reseam-data:/data
     ports:

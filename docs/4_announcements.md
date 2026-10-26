@@ -5,7 +5,7 @@ description: Post, edit, archive, and delete announcements.
 
 # Announcements
 
-Announcements are short notices: a new release, an outage, a warning. The website shows the newest one at the top of every page and all of them under Announcements. Anyone can read them; writing needs the admin token.
+Announcements are short notices: a new release, an outage, a warning. The website shows the newest one at the top of every page and all of them in its Updates timeline. With `RELAY_URL` set, a new announcement is also posted to Reseam's socials. Anyone can read them; writing needs the admin token.
 
 ## Post one
 
@@ -50,3 +50,5 @@ curl -X DELETE https://api.reseam.app/v1/announcements/42 \
 ```
 
 Deleting is permanent. Prefer archiving.
+
+Next: [Requests](5_requests.md).

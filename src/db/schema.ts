@@ -1,4 +1,5 @@
-import { sqliteTable, text, integer, index } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, index, primaryKey, type AnySQLiteColumn } from "drizzle-orm/sqlite-core";
+import type { RequestStatus } from "../schemas/requests";
 
 export const announcements = sqliteTable(
   "announcements",
@@ -39,4 +40,72 @@ export const announcementTags = sqliteTable(
     index("announcement_tags_announcement_id_idx").on(table.announcementId),
     index("announcement_tags_tag_id_idx").on(table.tagId),
   ],
+);
+
+export const voters = sqliteTable(
+  "voters",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    tokenHash: text("token_hash").notNull().unique(),
+    ipHash: text("ip_hash").notNull(),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => [index("voters_ip_hash_created_at_idx").on(table.ipHash, table.createdAt)],
+);
+
+export const requests = sqliteTable(
+  "requests",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    app: text("app"),
+    title: text("title").notNull(),
+    body: text("body"),
+    status: text("status").notNull().$type<RequestStatus>().default("open"),
+    shippedIn: text("shipped_in"),
+    duplicateOf: integer("duplicate_of").references((): AnySQLiteColumn => requests.id, { onDelete: "set null" }),
+    voterId: integer("voter_id")
+      .notNull()
+      .references(() => voters.id, { onDelete: "cascade" }),
+    ipHash: text("ip_hash").notNull(),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => [
+    index("requests_status_idx").on(table.status),
+    index("requests_voter_id_created_at_idx").on(table.voterId, table.createdAt),
+    index("requests_ip_hash_created_at_idx").on(table.ipHash, table.createdAt),
+  ],
+);
+
+export const requestVotes = sqliteTable(
+  "request_votes",
+  {
+    requestId: integer("request_id")
+      .notNull()
+      .references(() => requests.id, { onDelete: "cascade" }),
+    voterId: integer("voter_id")
+      .notNull()
+      .references(() => voters.id, { onDelete: "cascade" }),
+    ipHash: text("ip_hash").notNull(),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.requestId, table.voterId] }),
+    index("request_votes_voter_id_idx").on(table.voterId),
+    index("request_votes_request_ip_idx").on(table.requestId, table.ipHash, table.createdAt),
+  ],
+);
+
+export const requestReports = sqliteTable(
+  "request_reports",
+  {
+    requestId: integer("request_id")
+      .notNull()
+      .references(() => requests.id, { onDelete: "cascade" }),
+    voterId: integer("voter_id")
+      .notNull()
+      .references(() => voters.id, { onDelete: "cascade" }),
+    ipHash: text("ip_hash").notNull(),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.requestId, table.voterId] })],
 );

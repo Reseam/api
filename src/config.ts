@@ -7,6 +7,13 @@ export type Config = {
   adminToken: string;
   dbPath: string;
   cacheTtl: number;
+  clientIpHeader: string;
+  requestsSecret: string;
+  turnstileSecret: string;
+  openRouterApiKey: string;
+  screeningModel: string;
+  relayUrl: string;
+  relaySecret: string;
 };
 
 const DEFAULT_PATCHES_URL =
@@ -31,7 +38,14 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
     ),
     adminToken: env.ADMIN_TOKEN || "",
     dbPath: env.DB_PATH || "./data/reseam.db",
-    cacheTtl: readInt(env.CACHE_TTL, 300),
+    cacheTtl: readInt(env.CACHE_TTL, 60),
+    clientIpHeader: (env.CLIENT_IP_HEADER || "cf-connecting-ip").toLowerCase(),
+    requestsSecret: env.REQUESTS_SECRET || "",
+    turnstileSecret: env.TURNSTILE_SECRET || "",
+    openRouterApiKey: env.OPENROUTER_API_KEY || "",
+    screeningModel: env.SCREENING_MODEL || "~typesafe/jev-latest",
+    relayUrl: stripTrailingSlash(env.RELAY_URL || ""),
+    relaySecret: env.RELAY_SECRET || "",
   };
 }
 

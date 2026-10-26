@@ -4,11 +4,15 @@ import { readConfig, type Config } from "./config";
 import { publicCors } from "./cors";
 import { openDatabase, type DrizzleDb } from "./db/client";
 import { ApiError } from "./errors";
+import { createRelay } from "./relay";
 import { announcementsRoutes } from "./routes/announcements";
 import { healthRoutes } from "./routes/health";
 import { managerRoutes } from "./routes/manager";
-import { patchesRoutes } from "./routes/patches";
+import { moderationRoutes } from "./routes/moderation";
 import { proxyRoutes } from "./routes/proxy";
+import { requestsRoutes } from "./routes/requests";
+import { votersRoutes } from "./routes/voters";
+import { createScreener } from "./screening";
 import { createUpstream } from "./upstream";
 
 type AppOptions = {
@@ -21,7 +25,10 @@ type AppOptions = {
 export function createApp(options: AppOptions = {}) {
   const config = options.config ?? readConfig();
   const db = options.db ?? openDatabase(config.dbPath);
-  const upstream = createUpstream(config, options.fetcher ?? fetch);
+  const fetcher = options.fetcher ?? fetch;
+  const upstream = createUpstream(config, fetcher);
+  const relay = createRelay(config, fetcher);
+  const screen = createScreener(config, fetcher);
   const version = options.version ?? "0.0.0";
 
   return new Elysia()
@@ -34,10 +41,10 @@ export function createApp(options: AppOptions = {}) {
             version,
           },
           tags: [
-            { name: "Patches", description: "Patch bundle release metadata" },
-            { name: "Manager", description: "Manager binary release metadata" },
-            { name: "Proxy", description: "Raw upstream index files and asset redirects" },
+            { name: "Proxy", description: "Release index files and download redirects" },
+            { name: "Manager", description: "Latest stable Reseam Manager for clients before 0.32" },
             { name: "Announcements", description: "Operational notices" },
+            { name: "Requests", description: "Patch requests, votes and reports" },
             { name: "Health", description: "Service health" },
           ],
           components: {
@@ -70,18 +77,19 @@ export function createApp(options: AppOptions = {}) {
       version,
       docs: "/openapi",
       endpoints: {
-        patches: "/v1/patches",
-        manager: "/v1/manager",
-        announcements: "/v1/announcements",
-        health: "/v1/health",
         patchesIndex: "/patches.json",
         managerIndex: "/manager.json",
+        announcements: "/v1/announcements",
+        requests: "/v1/requests",
+        health: "/v1/health",
       },
     }))
     .use(proxyRoutes(config, upstream))
-    .use(patchesRoutes(config, upstream))
     .use(managerRoutes(config, upstream))
-    .use(announcementsRoutes(config, db))
+    .use(announcementsRoutes(config, db, relay))
+    .use(votersRoutes(config, db, fetcher))
+    .use(requestsRoutes(config, db, { upstream, screen, relay }))
+    .use(moderationRoutes(config, db))
     .use(healthRoutes(version));
 }
 

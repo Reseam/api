@@ -1,17 +1,17 @@
 import { bearer } from "@elysiajs/bearer";
 import { Elysia, t } from "elysia";
-import { safeEqual } from "../auth";
+import { adminRefusal } from "../auth";
 import { httpCache } from "../cache";
 import type { Config } from "../config";
 import type { DrizzleDb } from "../db/client";
 import {
   createAnnouncement,
-  getAnnouncement,
   listAnnouncements,
   removeAnnouncement,
   updateAnnouncement,
 } from "../db/announcements";
 import { ApiError } from "../errors";
+import type { Relay } from "../relay";
 import {
   AnnouncementListSchema,
   AnnouncementQuerySchema,
@@ -22,49 +22,32 @@ import {
 } from "../schemas/announcements";
 import { ErrorSchema } from "../schemas/releases";
 
-export function announcementsRoutes(config: Config, db: DrizzleDb) {
+export function announcementsRoutes(config: Config, db: DrizzleDb, relay: Relay) {
   return new Elysia({ prefix: "/v1/announcements", tags: ["Announcements"] })
     .use(bearer())
     .use(httpCache("no-cache"))
     .get(
       "/",
-      ({ query }) =>
-        listAnnouncements(db, {
-          tag: query.tag,
-          includeArchived: query.archived === true,
-        }),
+      ({ query }) => listAnnouncements(db, { includeArchived: query.archived === true }),
       {
         query: AnnouncementQuerySchema,
         response: { 200: AnnouncementListSchema },
       },
     )
-    .get(
-      "/:id",
-      ({ params }) => {
-        const announcement = getAnnouncement(db, params.id);
-        if (!announcement) throw new ApiError(404, "Announcement not found");
-        return announcement;
-      },
-      {
-        params: t.Object({ id: t.Number({ minimum: 1 }) }),
-        response: { 200: AnnouncementSchema, 404: ErrorSchema },
-      },
-    )
     .guard({
       beforeHandle({ bearer, set, status }) {
-        if (!config.adminToken)
-          return status(503, { error: "ADMIN_TOKEN is not configured" });
-        if (!safeEqual(bearer ?? "", config.adminToken)) {
-          set.headers["WWW-Authenticate"] = 'Bearer realm="reseam-admin"';
-          return status(401, { error: "Unauthorized" });
-        }
+        const refusal = adminRefusal(config, bearer);
+        if (refusal?.code === 401) set.headers["WWW-Authenticate"] = 'Bearer realm="reseam-admin"';
+        if (refusal) return status(refusal.code, { error: refusal.error });
       },
     })
     .post(
       "/",
       ({ body, set }) => {
+        const created = createAnnouncement(db, body)!;
+        relay({ type: "announcement", announcement: created });
         set.status = 201;
-        return createAnnouncement(db, body);
+        return created;
       },
       {
         body: CreateAnnouncementSchema,

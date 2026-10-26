@@ -9,22 +9,13 @@ Every route allows requests from any origin. Errors are JSON: `{ "error": "messa
 
 ## Releases
 
-`<index>` is `patches` or `manager`.
-
 | Route | Returns |
 |---|---|
-| `GET /<index>.json` | the whole index |
-| `GET /v1/<index>` | `{ bundle, release }`: the latest stable release |
-| `GET /v1/<index>/prerelease` | `{ bundle, release }`: the latest prerelease |
-| `GET /v1/<index>/version` | `{ version }` of the latest stable release |
-| `GET /v1/<index>/history` | `{ bundle, releases }`: every stable release |
-| `GET /v1/patches/version/prerelease` | `{ version }` of the latest prerelease |
-| `GET /v1/patches/history/prerelease` | `{ bundle, releases }`: every release, prereleases included |
-| `GET /v1/patches/keys` | `{ public_key }` of the bundle signer |
+| `GET /patches.json` | the patch index |
+| `GET /manager.json` | the Reseam Manager index |
+| `GET /v1/manager` | `{ bundle, release }`: the latest stable Reseam Manager, for Manager before 0.32 |
 
-"Latest" means the first matching entry in the index's `releases` list; `reseam release` writes the newest first. These return `404` when no release matches.
-
-A `release` has `version`, `created_at`, `description` (its release notes), `download_url`, `prerelease`, and, for the newest patches release and prerelease, `patches`: every patch's name, description, apps, dependencies, and options. Older releases in `history` have no `patches`. `bundle` has `name`, `author`, `description`, `homepage`, and `public_key`.
+An index has `bundle` and `releases`, newest first, as `reseam release` writes them. A `release` has `version`, `created_at`, `description` (its release notes), `download_url`, `prerelease`, and, for the newest stable release and the newest prerelease, `patches`: every patch's name, description, apps, dependencies, and options. `bundle` has `name`, `author`, `description`, `homepage`, and `public_key`.
 
 ## Downloads
 
@@ -39,9 +30,20 @@ A `release` has `version`, `created_at`, `description` (its release notes), `dow
 
 | Route | |
 |---|---|
-| `GET /v1/announcements` | live announcements, newest first; `?archived=true` includes archived ones, `?tag=<tag>` filters |
-| `GET /v1/announcements/<id>` | one announcement |
+| `GET /v1/announcements` | live announcements, newest first; `?archived=true` includes archived ones |
 | `POST`, `PATCH`, `DELETE` | see [Announcements](4_announcements.md) |
+
+## Requests
+
+| Route | |
+|---|---|
+| `GET /v1/requests` | requests, most votes first; see [Requests](5_requests.md) for filters |
+| `POST /v1/voters` | a voter token, after a Turnstile check |
+| `GET /v1/voters/me` | the requests a voter posted and voted on |
+| `POST /v1/requests` | post a request |
+| `PUT`, `DELETE /v1/requests/<id>/vote` | vote, or take the vote back |
+| `POST /v1/requests/<id>/report` | report a request |
+| `PATCH`, `DELETE /v1/requests/<id>` | admin: edit or delete |
 
 ## Other
 
@@ -56,8 +58,11 @@ A `release` has `version`, `created_at`, `description` (its release notes), `dow
 | Status | When |
 |---|---|
 | `400` | invalid parameters or body |
-| `401` | missing or wrong admin token |
-| `404` | no such release, announcement, or route |
+| `401` | missing or wrong admin token, or unknown voter token |
+| `403` | failed Turnstile check |
+| `404` | no such release, announcement, request, or route |
+| `409` | a new request looks like an open one; the body has it as `duplicate` |
+| `429` | too many voters, requests, or votes from one voter or address |
 | `502` | the upstream index returned an error or isn't valid, and there is no cached copy |
-| `503` | writing announcements while `ADMIN_TOKEN` is not set |
+| `503` | writing announcements while `ADMIN_TOKEN` is not set, or requests while `REQUESTS_SECRET` or `TURNSTILE_SECRET` is not set |
 | `500` | anything else, including an unreachable upstream with no cached copy |

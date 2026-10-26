@@ -40,6 +40,13 @@ const config: Config = {
   adminToken: "secret",
   dbPath: ":memory:",
   cacheTtl: 300,
+  clientIpHeader: "cf-connecting-ip",
+  requestsSecret: "",
+  turnstileSecret: "",
+  openRouterApiKey: "",
+  screeningModel: "~typesafe/jev-latest",
+  relayUrl: "",
+  relaySecret: "",
 };
 
 function mockFetch(fn: () => Promise<Response>): typeof fetch {
@@ -73,63 +80,6 @@ describe("Health", () => {
   });
 });
 
-describe("Patches", () => {
-  it("returns latest stable release", async () => {
-    const res = await testApp().handle(req("/v1/patches"));
-    const body = await res.json();
-    expect(res.status).toBe(200);
-    expect(body.release.version).toBe("v2.0.0");
-    expect(res.headers.get("etag")).toStartWith('"');
-    expect(res.headers.get("cache-control")).toContain("s-maxage=300");
-  });
-
-  it("returns 304 when the ETag matches", async () => {
-    const app = testApp();
-    const first = await app.handle(req("/v1/patches"));
-    const res = await app.handle(
-      req("/v1/patches", { headers: { "If-None-Match": first.headers.get("etag")! } }),
-    );
-    expect(res.status).toBe(304);
-    expect(res.headers.get("etag")).toBe(first.headers.get("etag"));
-    expect(await res.text()).toBe("");
-  });
-
-  it("returns prerelease", async () => {
-    const res = await testApp().handle(req("/v1/patches/prerelease"));
-    expect(res.status).toBe(200);
-    expect((await res.json()).release.version).toBe("v2.1.0-beta");
-  });
-
-  it("returns stable version string", async () => {
-    const res = await testApp().handle(req("/v1/patches/version"));
-    expect(res.status).toBe(200);
-    expect((await res.json()).version).toBe("v2.0.0");
-  });
-
-  it("returns prerelease version string", async () => {
-    const res = await testApp().handle(req("/v1/patches/version/prerelease"));
-    expect(res.status).toBe(200);
-    expect((await res.json()).version).toBe("v2.1.0-beta");
-  });
-
-  it("returns stable history", async () => {
-    const body = await (await testApp().handle(req("/v1/patches/history"))).json();
-    expect(body.releases).toHaveLength(1);
-    expect(body.releases[0].version).toBe("v2.0.0");
-  });
-
-  it("returns full history including prereleases", async () => {
-    const body = await (await testApp().handle(req("/v1/patches/history/prerelease"))).json();
-    expect(body.releases).toHaveLength(2);
-  });
-
-  it("returns public key", async () => {
-    const res = await testApp().handle(req("/v1/patches/keys"));
-    expect(res.status).toBe(200);
-    expect((await res.json()).public_key).toBe(releaseFile.bundle.public_key);
-  });
-});
-
 describe("Manager", () => {
   it("returns latest stable release", async () => {
     const res = await testApp().handle(req("/v1/manager"));
@@ -137,23 +87,6 @@ describe("Manager", () => {
     expect(res.status).toBe(200);
     expect(body.release.version).toBe("v2.0.0");
     expect(res.headers.get("etag")).toStartWith('"');
-  });
-
-  it("returns prerelease", async () => {
-    const res = await testApp().handle(req("/v1/manager/prerelease"));
-    expect(res.status).toBe(200);
-    expect((await res.json()).release.version).toBe("v2.1.0-beta");
-  });
-
-  it("returns version string", async () => {
-    const res = await testApp().handle(req("/v1/manager/version"));
-    expect(res.status).toBe(200);
-    expect((await res.json()).version).toBe("v2.0.0");
-  });
-
-  it("returns stable history", async () => {
-    const body = await (await testApp().handle(req("/v1/manager/history"))).json();
-    expect(body.releases).toHaveLength(1);
   });
 });
 
@@ -164,6 +97,17 @@ describe("Proxy", () => {
     expect(await res.json()).toEqual(releaseFile);
     expect(res.headers.get("etag")).toStartWith('"');
     expect(res.headers.get("cache-control")).toContain("s-maxage=300");
+  });
+
+  it("returns 304 when the ETag matches", async () => {
+    const app = testApp();
+    const first = await app.handle(req("/patches.json"));
+    const res = await app.handle(
+      req("/patches.json", { headers: { "If-None-Match": first.headers.get("etag")! } }),
+    );
+    expect(res.status).toBe(304);
+    expect(res.headers.get("etag")).toBe(first.headers.get("etag"));
+    expect(await res.text()).toBe("");
   });
 
   it("serves manager.json verbatim", async () => {
@@ -207,7 +151,7 @@ describe("Announcements", () => {
     expect(await res.json()).toEqual([]);
   });
 
-  it("creates, gets, updates, and deletes an announcement", async () => {
+  it("creates, lists, updates, and deletes an announcement", async () => {
     const app = testApp();
 
     const createRes = await app.handle(
@@ -222,10 +166,10 @@ describe("Announcements", () => {
     expect(created.title).toBe("Maintenance");
     expect(created.tags).toEqual(["infra", "ops"]);
 
-    const getRes = await app.handle(req(`/v1/announcements/${created.id}`));
-    expect(getRes.status).toBe(200);
-    expect(getRes.headers.get("etag")).toStartWith('"');
-    expect((await getRes.json()).title).toBe("Maintenance");
+    const listRes = await app.handle(req("/v1/announcements"));
+    expect(listRes.status).toBe(200);
+    expect(listRes.headers.get("etag")).toStartWith('"');
+    expect((await listRes.json())[0].title).toBe("Maintenance");
 
     const patchRes = await app.handle(
       req(`/v1/announcements/${created.id}`, {
@@ -243,27 +187,7 @@ describe("Announcements", () => {
     expect(deleteRes.status).toBe(200);
     expect((await deleteRes.json()).ok).toBe(true);
 
-    expect((await app.handle(req(`/v1/announcements/${created.id}`))).status).toBe(404);
-  });
-
-  it("filters by tag", async () => {
-    const app = testApp();
-    const post = (title: string, tag: string) =>
-      app.handle(req("/v1/announcements", {
-        method: "POST",
-        headers: { ...auth, ...json },
-        body: JSON.stringify({ title, tags: [tag] }),
-      }));
-
-    await post("A", "alpha");
-    await post("B", "beta");
-
-    const alpha = await (await app.handle(req("/v1/announcements?tag=alpha"))).json();
-    expect(alpha).toHaveLength(1);
-    expect(alpha[0].title).toBe("A");
-
-    const beta = await (await app.handle(req("/v1/announcements?tag=beta"))).json();
-    expect(beta).toHaveLength(1);
+    expect(await (await app.handle(req("/v1/announcements"))).json()).toEqual([]);
   });
 
   it("rejects writes without auth", async () => {
@@ -284,8 +208,11 @@ describe("Announcements", () => {
     expect(res.status).toBe(401);
   });
 
-  it("returns 404 for missing announcement", async () => {
-    expect((await testApp().handle(req("/v1/announcements/9999"))).status).toBe(404);
+  it("returns 404 for a missing announcement", async () => {
+    const res = await testApp().handle(
+      req("/v1/announcements/9999", { method: "PATCH", headers: { ...auth, ...json }, body: JSON.stringify({ title: "Gone" }) }),
+    );
+    expect(res.status).toBe(404);
   });
 
   it("hides archived announcements unless requested", async () => {
@@ -344,13 +271,13 @@ describe("Announcements", () => {
 describe("Upstream", () => {
   it("returns 502 when upstream fails", async () => {
     const res = await testApp({ fetcher: mockFetch(async () => new Response("error", { status: 500 })) })
-      .handle(req("/v1/patches"));
+      .handle(req("/patches.json"));
     expect(res.status).toBe(502);
   });
 
   it("returns 502 when upstream returns invalid data", async () => {
     const res = await testApp({ fetcher: mockFetch(async () => Response.json({ invalid: true })) })
-      .handle(req("/v1/patches"));
+      .handle(req("/patches.json"));
     expect(res.status).toBe(502);
   });
 
@@ -361,10 +288,10 @@ describe("Upstream", () => {
     );
     const app = testApp({ fetcher, config: { cacheTtl: 0 } });
 
-    expect((await app.handle(req("/v1/patches"))).status).toBe(200);
-    const res = await app.handle(req("/v1/patches"));
+    expect((await app.handle(req("/patches.json"))).status).toBe(200);
+    const res = await app.handle(req("/patches.json"));
     expect(res.status).toBe(200);
-    expect((await res.json()).release.version).toBe("v2.0.0");
+    expect((await res.json()).releases[0].version).toBe("v2.0.0");
     expect(calls).toBe(2);
   });
 
@@ -378,7 +305,7 @@ describe("Upstream", () => {
     const app = testApp({ fetcher });
 
     const responses = await Promise.all(
-      ["/v1/patches", "/v1/patches/version", "/patches.json"].map((path) => app.handle(req(path))),
+      ["/patches.json", "/patches.json", "/patches.json"].map((path) => app.handle(req(path))),
     );
     expect(responses.map((r) => r.status)).toEqual([200, 200, 200]);
     expect(calls).toBe(1);

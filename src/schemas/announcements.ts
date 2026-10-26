@@ -21,7 +21,6 @@ export const AnnouncementSchema = t.Object({
 export const AnnouncementListSchema = t.Array(AnnouncementSchema);
 
 export const AnnouncementQuerySchema = t.Object({
-  tag: t.Optional(t.String()),
   archived: t.Optional(t.Boolean()),
 });
 
