@@ -3,16 +3,18 @@ import { Elysia, t } from "elysia";
 import { adminRefusal } from "../auth";
 import type { Config } from "../config";
 import type { DrizzleDb } from "../db/client";
+import { setCommentHidden } from "../db/comments";
 import { removeRequest, updateRequest } from "../db/requests";
 import { removeAuthor } from "../db/voters";
 import { ApiError } from "../errors";
 import { DeleteResponseSchema } from "../schemas/announcements";
+import { CommentSchema, UpdateCommentSchema } from "../schemas/comments";
 import { ErrorSchema } from "../schemas/releases";
 import { RequestSchema, UpdateRequestSchema } from "../schemas/requests";
 import { IdParams } from "./request-access";
 
 export function moderationRoutes(config: Config, db: DrizzleDb) {
-  return new Elysia({ prefix: "/v1/requests", tags: ["Requests"] })
+  return new Elysia({ prefix: "/v1", tags: ["Requests"] })
     .use(bearer())
     .guard({
       beforeHandle({ bearer, set, status }) {
@@ -22,7 +24,7 @@ export function moderationRoutes(config: Config, db: DrizzleDb) {
       },
     })
     .patch(
-      "/:id",
+      "/requests/:id",
       ({ params, body }) => {
         const updated = updateRequest(db, params.id, body);
         if (!updated) throw new ApiError(404, "Request not found");
@@ -35,7 +37,7 @@ export function moderationRoutes(config: Config, db: DrizzleDb) {
       },
     )
     .delete(
-      "/:id",
+      "/requests/:id",
       ({ params, query }) => {
         const removed = query.author ? removeAuthor(db, params.id) : removeRequest(db, params.id);
         if (!removed) throw new ApiError(404, "Request not found");
@@ -45,6 +47,19 @@ export function moderationRoutes(config: Config, db: DrizzleDb) {
         params: IdParams,
         query: t.Object({ author: t.Optional(t.Boolean()) }),
         response: { 200: DeleteResponseSchema, 401: ErrorSchema, 404: ErrorSchema, 503: ErrorSchema },
+      },
+    )
+    .patch(
+      "/comments/:id",
+      ({ params, body }) => {
+        const updated = setCommentHidden(db, params.id, body.hidden);
+        if (!updated) throw new ApiError(404, "Comment not found");
+        return updated;
+      },
+      {
+        params: IdParams,
+        body: UpdateCommentSchema,
+        response: { 200: CommentSchema, 401: ErrorSchema, 404: ErrorSchema, 503: ErrorSchema },
       },
     );
 }

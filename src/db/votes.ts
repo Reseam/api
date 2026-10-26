@@ -4,8 +4,8 @@ import { countWhere } from "./counts";
 import { requestReports, requests, requestVotes } from "./schema";
 import type { Voter } from "./voters";
 
-const HIDE_AFTER_REPORTERS = 3;
-const HIDE_AFTER_REPORTER_ADDRESSES = 2;
+export const HIDE_AFTER_REPORTERS = 3;
+export const HIDE_AFTER_REPORTER_ADDRESSES = 2;
 
 export function countVotes(db: DrizzleDb, requestId: number, ipHash: string, after: string) {
   return countWhere(

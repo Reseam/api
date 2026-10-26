@@ -1,7 +1,7 @@
 import { and, eq, gt } from "drizzle-orm";
 import type { DrizzleDb } from "./client";
 import { countWhere } from "./counts";
-import { requests, requestVotes, voters } from "./schema";
+import { requestComments, requests, requestVotes, voters } from "./schema";
 
 export type Voter = typeof voters.$inferSelect;
 
@@ -21,10 +21,11 @@ export function voterActivity(db: DrizzleDb, voterId: number) {
   return {
     requests: db.select({ id: requests.id }).from(requests).where(eq(requests.voterId, voterId)).all().map((row) => row.id),
     votes: db.select({ id: requestVotes.requestId }).from(requestVotes).where(eq(requestVotes.voterId, voterId)).all().map((row) => row.id),
+    comments: db.select({ id: requestComments.id }).from(requestComments).where(eq(requestComments.voterId, voterId)).all().map((row) => row.id),
   };
 }
 
-/** Deletes whoever wrote the request, and with them every request, vote and report they made. */
+/** Deletes whoever wrote the request, and with them every request, comment, vote and report they made. */
 export function removeAuthor(db: DrizzleDb, id: number) {
   const row = db.select({ voterId: requests.voterId }).from(requests).where(eq(requests.id, id)).get();
   if (!row) return false;

@@ -20,6 +20,7 @@ export const RequestSchema = t.Object({
   shipped_in: t.Union([t.String(), t.Null()]),
   duplicate_of: t.Union([t.Number(), t.Null()]),
   votes: t.Number(),
+  comments: t.Number(),
   created_at: t.String(),
 });
 
@@ -57,6 +58,7 @@ export const VoterSchema = t.Object({ token: t.String() });
 export const VoterActivitySchema = t.Object({
   requests: t.Array(t.Number()),
   votes: t.Array(t.Number()),
+  comments: t.Array(t.Number()),
 });
 
 export const VotesSchema = t.Object({ votes: t.Number() });

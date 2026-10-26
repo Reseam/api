@@ -8,6 +8,7 @@ import { createRelay } from "./relay";
 import { announcementsRoutes } from "./routes/announcements";
 import { healthRoutes } from "./routes/health";
 import { managerRoutes } from "./routes/manager";
+import { commentsRoutes } from "./routes/comments";
 import { moderationRoutes } from "./routes/moderation";
 import { proxyRoutes } from "./routes/proxy";
 import { requestsRoutes } from "./routes/requests";
@@ -44,7 +45,7 @@ export function createApp(options: AppOptions = {}) {
             { name: "Proxy", description: "Release index files and download redirects" },
             { name: "Manager", description: "Latest stable Reseam Manager for clients before 0.32" },
             { name: "Announcements", description: "Operational notices" },
-            { name: "Requests", description: "Patch requests, votes and reports" },
+            { name: "Requests", description: "Patch requests, votes, comments and reports" },
             { name: "Health", description: "Service health" },
           ],
           components: {
@@ -89,6 +90,7 @@ export function createApp(options: AppOptions = {}) {
     .use(announcementsRoutes(config, db, relay))
     .use(votersRoutes(config, db, fetcher))
     .use(requestsRoutes(config, db, { upstream, screen, relay }))
+    .use(commentsRoutes(config, db, { screen, relay }))
     .use(moderationRoutes(config, db))
     .use(healthRoutes(version));
 }

@@ -15,6 +15,13 @@
       "when": 1793035364378,
       "tag": "0001_nice_killer_shrike",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1793048439106,
+      "tag": "0002_unusual_killmonger",
+      "breakpoints": true
     }
   ]
 }

@@ -1,9 +1,13 @@
 import { createHmac } from "node:crypto";
 import type { Config } from "./config";
 import type { Announcement } from "./schemas/announcements";
+import type { Comment } from "./schemas/comments";
 import type { Request } from "./schemas/requests";
 
-export type RelayEvent = { type: "announcement"; announcement: Announcement } | { type: "request"; request: Request };
+export type RelayEvent =
+  | { type: "announcement"; announcement: Announcement }
+  | { type: "request"; request: Request }
+  | { type: "comment"; comment: Comment; request: Request };
 export type Relay = (event: RelayEvent) => void;
 
 // A failed delivery is logged and dropped: a post on the socials never fails the write that caused it.

@@ -64,7 +64,7 @@ export function requestsRoutes(config: Config, db: DrizzleDb, { upstream, screen
           throw new ApiError(429, "Too many requests today");
 
         const screening = screen &&
-          (await screen(body, openRequests(db, body.app, SCREENED_CANDIDATES), await packages()).catch((error: Error) => {
+          (await screen.request(body, openRequests(db, body.app, SCREENED_CANDIDATES), await packages()).catch((error: Error) => {
             console.error(`screening: ${error.message}`);
             return undefined;
           }));

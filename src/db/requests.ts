@@ -1,11 +1,14 @@
 import { and, desc, eq, gt, inArray, like, ne, or, sql, type SQL } from "drizzle-orm";
 import type { DrizzleDb } from "./client";
 import { countWhere } from "./counts";
-import { requests, requestVotes } from "./schema";
+import { requestComments, requests, requestVotes } from "./schema";
 import type { Voter } from "./voters";
 import type { CreateRequest, Request, RequestQuery, RequestStatus, UpdateRequest } from "../schemas/requests";
 
-const voteCount = sql<number>`(SELECT COUNT(*) FROM ${requestVotes} WHERE ${requestVotes.requestId} = ${requests.id})`;
+// Drizzle leaves columns unqualified in a single-table select, so inside a subquery "id" would bind to the inner table.
+const requestId = sql`${requests}.${sql.identifier(requests.id.name)}`;
+const voteCount = sql<number>`(SELECT COUNT(*) FROM ${requestVotes} WHERE ${requestVotes.requestId} = ${requestId})`;
+const commentCount = sql<number>`(SELECT COUNT(*) FROM ${requestComments} WHERE ${requestComments.requestId} = ${requestId} AND ${requestComments.hidden} = 0)`;
 
 function requestQuery(db: DrizzleDb) {
   return db
@@ -18,6 +21,7 @@ function requestQuery(db: DrizzleDb) {
       shipped_in: requests.shippedIn,
       duplicate_of: requests.duplicateOf,
       votes: voteCount,
+      comments: commentCount,
       created_at: requests.createdAt,
     })
     .from(requests);

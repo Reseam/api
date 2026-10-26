@@ -109,3 +109,38 @@ export const requestReports = sqliteTable(
   },
   (table) => [primaryKey({ columns: [table.requestId, table.voterId] })],
 );
+
+export const requestComments = sqliteTable(
+  "request_comments",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    requestId: integer("request_id")
+      .notNull()
+      .references(() => requests.id, { onDelete: "cascade" }),
+    voterId: integer("voter_id").references(() => voters.id, { onDelete: "cascade" }),
+    body: text("body").notNull(),
+    hidden: integer("hidden", { mode: "boolean" }).notNull().default(false),
+    ipHash: text("ip_hash"),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => [
+    index("request_comments_request_id_idx").on(table.requestId, table.createdAt),
+    index("request_comments_voter_id_created_at_idx").on(table.voterId, table.createdAt),
+    index("request_comments_ip_hash_created_at_idx").on(table.ipHash, table.createdAt),
+  ],
+);
+
+export const commentReports = sqliteTable(
+  "comment_reports",
+  {
+    commentId: integer("comment_id")
+      .notNull()
+      .references(() => requestComments.id, { onDelete: "cascade" }),
+    voterId: integer("voter_id")
+      .notNull()
+      .references(() => voters.id, { onDelete: "cascade" }),
+    ipHash: text("ip_hash").notNull(),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.commentId, table.voterId] })],
+);

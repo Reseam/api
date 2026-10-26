@@ -1,5 +1,5 @@
 import { Value } from "@sinclair/typebox/value";
-import { t } from "elysia";
+import { t, type TSchema } from "elysia";
 import type { Config } from "./config";
 
 const ENDPOINT = "https://openrouter.ai/api/v1/systemone";
@@ -16,15 +16,31 @@ const AnswersSchema = t.Object({
   }),
 });
 
+const CommentAnswersSchema = t.Object({ answers: t.Object({ spam: t.Object({ noul: t.Number() }) }) });
+
 export type Submission = { title: string; body?: string; app?: string };
 export type Candidate = { id: number; title: string };
 export type Screening = { spam: boolean; duplicateOf: number | null; app: string | null };
-export type Screener = (submission: Submission, candidates: Candidate[], packages: string[]) => Promise<Screening>;
+export type Screener = {
+  request(submission: Submission, candidates: Candidate[], packages: string[]): Promise<Screening>;
+  /** Whether a comment is spam, ads or abuse instead of a reply about its request. */
+  spamComment(comment: string, request: { title: string; body: string | null }): Promise<boolean>;
+};
 
 export function createScreener(config: Config, fetcher: typeof fetch): Screener | undefined {
   if (!config.openRouterApiKey) return undefined;
 
-  return async (submission, candidates, packages) => {
+  const ask = async <S extends TSchema>(state: unknown, questions: unknown, schema: S) => {
+    const response = await fetcher(ENDPOINT, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${config.openRouterApiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ model: config.screeningModel, state, questions }),
+    });
+    if (!response.ok) throw new Error(`Screening returned ${response.status}: ${(await response.text()).slice(0, 300)}`);
+    return Value.Parse(schema, await response.json());
+  };
+
+  const request: Screener["request"] = async (submission, candidates, packages) => {
     const choice = (entries: [string, string][], none: string) => Object.fromEntries([[NONE, none], ...entries]);
     const questions = {
       spam: {
@@ -48,17 +64,11 @@ export function createScreener(config: Config, fetcher: typeof fetch): Screener 
       }),
     };
 
-    const response = await fetcher(ENDPOINT, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${config.openRouterApiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: config.screeningModel,
-        state: { request: { title: submission.title, body: submission.body ?? "" } },
-        questions,
-      }),
-    });
-    if (!response.ok) throw new Error(`Screening returned ${response.status}: ${(await response.text()).slice(0, 300)}`);
-    const { answers } = Value.Parse(AnswersSchema, await response.json());
+    const { answers } = await ask(
+      { request: { title: submission.title, body: submission.body ?? "" } },
+      questions,
+      AnswersSchema,
+    );
 
     const picked = (answer: { choice: string; probabilities: Record<string, number> } | undefined, at: number) =>
       answer && answer.choice !== NONE && (answer.probabilities[answer.choice] ?? 0) >= at ? answer.choice : null;
@@ -69,4 +79,21 @@ export function createScreener(config: Config, fetcher: typeof fetch): Screener 
       app: picked(answers.app, APP_AT),
     };
   };
+
+  const spamComment: Screener["spamComment"] = async (comment, request) => {
+    const { answers } = await ask(
+      { request: { title: request.title, body: request.body ?? "" }, comment },
+      {
+        spam: {
+          type: "noul",
+          instructions: "Is this comment spam, advertising, or abuse, instead of a reply about the request it is posted on?",
+          criteria: { true: "Spam, advertising, or abuse", false: "A genuine reply, however short, critical or off the mark" },
+        },
+      },
+      CommentAnswersSchema,
+    );
+    return answers.spam.noul >= SPAM_AT;
+  };
+
+  return { request, spamComment };
 }
