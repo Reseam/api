@@ -77,7 +77,7 @@ curl -X POST https://api.reseam.app/v1/requests/12/comments \
   -d '{ "body": "Does it need to work in the mini player too?" }'
 ```
 
-`GET /v1/requests/<id>/comments` lists a request's comments, oldest first. A comment has `id`, `request_id`, `body`, `team`, `hidden`, and `created_at`. A comment posted with the admin token is `team: true` and skips the limits and screening.
+`GET /v1/requests/<id>/comments` lists a request's comments, oldest first. A comment has `id`, `request_id`, `body`, `team`, `requester` (written by whoever posted the request), `hidden`, and `created_at`. A comment posted with the admin token is `team: true` and skips the limits and screening.
 
 `body` is 1 to 1000 characters. One token comments at most 30 times a day, one address at most 100. A comment that screening flags as spam is stored with `hidden: true`.
 

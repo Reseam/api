@@ -5,6 +5,7 @@ export const CommentSchema = t.Object({
   request_id: t.Number(),
   body: t.String(),
   team: t.Boolean(),
+  requester: t.Boolean(),
   hidden: t.Boolean(),
   created_at: t.String(),
 });

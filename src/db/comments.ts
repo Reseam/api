@@ -1,12 +1,17 @@
 import { and, asc, eq, gt, sql } from "drizzle-orm";
 import type { DrizzleDb } from "./client";
 import { countWhere } from "./counts";
-import { commentReports, requestComments } from "./schema";
+import { commentReports, requestComments, requests } from "./schema";
 import { HIDE_AFTER_REPORTER_ADDRESSES, HIDE_AFTER_REPORTERS } from "./votes";
 import type { Voter } from "./voters";
 import type { Comment } from "../schemas/comments";
 
 export type CommentAuthor = { voter: Voter; ipHash: string } | "team";
+
+// Qualified by hand: Drizzle leaves columns unqualified, and inside the subquery they would bind to requests.
+const commentRequestId = sql`${requestComments}.${sql.identifier(requestComments.requestId.name)}`;
+const commentVoterId = sql`${requestComments}.${sql.identifier(requestComments.voterId.name)}`;
+const byRequester = sql<boolean>`${commentVoterId} = (SELECT ${requests.voterId} FROM ${requests} WHERE ${requests.id} = ${commentRequestId})`;
 
 function commentQuery(db: DrizzleDb) {
   return db
@@ -15,6 +20,7 @@ function commentQuery(db: DrizzleDb) {
       request_id: requestComments.requestId,
       body: requestComments.body,
       team: sql<boolean>`${requestComments.voterId} IS NULL`.mapWith(Boolean),
+      requester: sql<boolean>`COALESCE(${byRequester}, 0)`.mapWith(Boolean),
       hidden: requestComments.hidden,
       created_at: requestComments.createdAt,
     })
