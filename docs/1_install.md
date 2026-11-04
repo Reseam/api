@@ -16,7 +16,7 @@ curl http://localhost:4000/v1/health
 
 Keep the `ADMIN_TOKEN` value: you need it to post announcements. Set the other [configuration](2_config.md) in the compose file or an `.env` file.
 
-The compose file also starts the translation engine, reachable only from the API. On its first start it downloads its models, about 33 MB per direction. See [Translate](6_translate.md).
+The compose file also starts the [translation engine](6_translate.md), which downloads its models on first start.
 
 ## Bun
 

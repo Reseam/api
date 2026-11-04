@@ -49,7 +49,7 @@ export function createApp(options: AppOptions = {}) {
             { name: "Manager", description: "Latest stable Reseam Manager for clients before 0.32" },
             { name: "Announcements", description: "Operational notices" },
             { name: "Requests", description: "Patch requests, votes, comments and reports" },
-            { name: "Translate", description: "Post translation" },
+            { name: "Translate", description: "Translation" },
             { name: "Health", description: "Service health" },
           ],
           components: {

@@ -13,7 +13,7 @@ It does five things:
 - **Download links.** `/patches/<tag>/<file>` and `/manager/<tag>/<file>` redirect to where the files are hosted, so clients keep working when hosting moves.
 - **Announcements.** Short messages stored in SQLite. Anyone can read them; writing needs an admin token.
 - **Requests.** Patch requests anyone can post and vote on without an account. See [Requests](5_requests.md).
-- **Translation.** Posts from the patched apps are translated on our own servers, with Mozilla's Firefox Translations models. No text goes to a third party. See [Translate](6_translate.md).
+- **Translation.** It translates short texts with Mozilla's Firefox Translations models. See [Translate](6_translate.md).
 
 It never opens a bundle or runs patch code. Bundles from other publishers don't go through it: Reseam Manager reads their `patches.json` directly.
 

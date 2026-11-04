@@ -26,9 +26,9 @@ All settings are environment variables, read at startup.
 | `RELAY_URL` | empty | Reseam Relay to tell about new announcements and requests |
 | `RELAY_SECRET` | empty | shared secret that signs those notifications |
 | `TRANSLATE_URL` | empty | the [translation engine](6_translate.md); empty turns `/v1/translate` off |
-| `TRANSLATE_TOKEN` | empty | token the engine requires, if it was started with one |
+| `TRANSLATE_TOKEN` | empty | token the engine requires |
 | `TRANSLATE_RATE` | `120` | translate requests per client address per minute |
-| `TRANSLATE_CACHE_ENTRIES` | `20000` | translations kept in memory, so a post many people open is translated once |
+| `TRANSLATE_CACHE_ENTRIES` | `20000` | translations kept in memory |
 
 ## Caching
 
