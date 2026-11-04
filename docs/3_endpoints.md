@@ -49,6 +49,13 @@ An index has `bundle` and `releases`, newest first, as `reseam release` writes t
 | `DELETE /v1/comments/<id>` | delete a comment: its author or an admin |
 | `PATCH /v1/comments/<id>` | admin: hide or show |
 
+## Translate
+
+| Route | |
+|---|---|
+| `POST /v1/translate` | translate texts; see [Translate](6_translate.md) |
+| `GET /v1/translate/languages` | `{ pairs, pivot }`: the directions the engine has models for |
+
 ## Other
 
 | Route | |
@@ -61,12 +68,13 @@ An index has `bundle` and `releases`, newest first, as `reseam release` writes t
 
 | Status | When |
 |---|---|
-| `400` | invalid parameters or body |
+| `400` | invalid parameters or body, or no translation model for the pair |
 | `401` | missing or wrong admin token, or unknown voter token |
 | `403` | failed Turnstile check, or deleting someone else's comment |
 | `404` | no such release, announcement, request, comment, or route |
 | `409` | a new request looks like an open one; the body has it as `duplicate` |
-| `429` | too many voters, requests, comments, or votes from one voter or address |
-| `502` | the upstream index returned an error or isn't valid, and there is no cached copy |
-| `503` | writing announcements while `ADMIN_TOKEN` is not set, or requests while `REQUESTS_SECRET` or `TURNSTILE_SECRET` is not set |
+| `413` | more than 20,000 bytes of text to translate |
+| `429` | too many voters, requests, comments, votes, or translations from one voter or address |
+| `502` | the upstream index returned an error or isn't valid and there is no cached copy, or the translation engine failed |
+| `503` | writing announcements while `ADMIN_TOKEN` is not set, requests while `REQUESTS_SECRET` or `TURNSTILE_SECRET` is not set, or translations while `TRANSLATE_URL` is not set |
 | `500` | anything else, including an unreachable upstream with no cached copy |

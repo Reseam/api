@@ -14,6 +14,10 @@ export type Config = {
   screeningModel: string;
   relayUrl: string;
   relaySecret: string;
+  translateUrl: string;
+  translateToken: string;
+  translateRate: number;
+  translateCacheEntries: number;
 };
 
 const DEFAULT_PATCHES_URL =
@@ -46,6 +50,10 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
     screeningModel: env.SCREENING_MODEL || "nace-ai/drex-max",
     relayUrl: stripTrailingSlash(env.RELAY_URL || ""),
     relaySecret: env.RELAY_SECRET || "",
+    translateUrl: stripTrailingSlash(env.TRANSLATE_URL || ""),
+    translateToken: env.TRANSLATE_TOKEN || "",
+    translateRate: readInt(env.TRANSLATE_RATE, 120),
+    translateCacheEntries: readInt(env.TRANSLATE_CACHE_ENTRIES, 20000),
   };
 }
 

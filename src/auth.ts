@@ -26,6 +26,10 @@ export function tokenHash(token: string) {
   return createHash("sha256").update(token).digest("hex");
 }
 
+export function clientAddress(config: Config, request: Request) {
+  return request.headers.get(config.clientIpHeader) ?? "unknown";
+}
+
 // Keyed so a leaked database does not give the addresses back by hashing every IPv4 address.
 export function addressHash(config: Config, address: string) {
   return createHmac("sha256", config.requestsSecret).update(address).digest("hex").slice(0, 32);

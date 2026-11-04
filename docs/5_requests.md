@@ -99,3 +99,5 @@ curl -X PATCH https://api.reseam.app/v1/requests/12 \
 `PATCH /v1/comments/<id>` with `{ "hidden": true }` or `false` hides or shows a comment. With the admin token, the comment list includes hidden comments.
 
 `DELETE /v1/requests/<id>` deletes one request. `DELETE /v1/requests/<id>?author=true` deletes its author's token and everything that token posted, commented, voted, and reported.
+
+Next: [Translate](6_translate.md).

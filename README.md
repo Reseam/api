@@ -10,6 +10,7 @@ The server behind [api.reseam.app](https://api.reseam.app). It tells Reseam Mana
 - **Download links.** `/patches/<tag>/<file>` and `/manager/<tag>/<file>` redirect to where the files are hosted.
 - **Announcements.** Stored in SQLite. Anyone can read them; writing needs the admin token.
 - **Requests.** Anyone posts, votes and comments without an account, after a Turnstile check. New requests and comments are screened by a decision model on OpenRouter.
+- **Translation.** Translates posts for the patched apps through [Reseam Translate](https://git.reseam.app/reseam/translate), with Mozilla's Firefox Translations models. No text goes to a third party.
 
 It never opens a bundle or checks a signature. Reseam Manager does that. One instance serves one patch bundle.
 

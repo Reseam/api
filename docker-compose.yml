@@ -12,12 +12,25 @@ services:
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
       RELAY_URL: ${RELAY_URL}
       RELAY_SECRET: ${RELAY_SECRET}
+      TRANSLATE_URL: http://translate:8080
+      TRANSLATE_TOKEN: ${TRANSLATE_TOKEN}
       DB_PATH: /data/reseam.db
       CACHE_TTL: "60"
     volumes:
       - reseam-data:/data
     ports:
       - "4000:4000"
+    depends_on:
+      - translate
+
+  translate:
+    build: https://git.reseam.app/reseam/translate.git
+    environment:
+      LANGUAGES: ${TRANSLATE_LANGUAGES:-es,fr,de,it,pt,ru,uk,pl,nl,tr,ar,fa,hi,ja,ko,zh,id,vi}
+      TRANSLATE_TOKEN: ${TRANSLATE_TOKEN}
+    volumes:
+      - translate-models:/models
 
 volumes:
   reseam-data:
+  translate-models:

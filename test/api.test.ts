@@ -3,6 +3,7 @@ import { createApp } from "../src/app";
 import type { Config } from "../src/config";
 import { openDatabase, type DrizzleDb } from "../src/db/client";
 import { tags } from "../src/db/schema";
+import { TranslateSchema } from "../src/schemas/translate";
 
 const releaseFile = {
   bundle: {
@@ -47,6 +48,10 @@ const config: Config = {
   screeningModel: "~typesafe/jev-latest",
   relayUrl: "",
   relaySecret: "",
+  translateUrl: "",
+  translateToken: "",
+  translateRate: 120,
+  translateCacheEntries: 1000,
 };
 
 function mockFetch(fn: () => Promise<Response>): typeof fetch {
@@ -309,5 +314,100 @@ describe("Upstream", () => {
     );
     expect(responses.map((r) => r.status)).toEqual([200, 200, 200]);
     expect(calls).toBe(1);
+  });
+});
+
+describe("Translate", () => {
+  function engine(options: { status?: number; body?: unknown } = {}) {
+    const calls: { url: string; auth: string | null; body?: typeof TranslateSchema.static }[] = [];
+    const fetcher = mockFetch((async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const body: typeof TranslateSchema.static | undefined = init?.body ? JSON.parse(String(init.body)) : undefined;
+      calls.push({ url, auth: new Headers(init?.headers).get("Authorization"), body });
+      if (options.status) return Response.json(options.body ?? { error: "boom" }, { status: options.status });
+      if (url.endsWith("/v1/languages")) return Response.json({ pairs: [["es", "en"], ["en", "es"]], pivot: "en" });
+      return Response.json({ translations: body!.texts.map((text) => text.toUpperCase()) });
+    }) as () => Promise<Response>);
+    return { calls, fetcher };
+  }
+  const translateConfig = { translateUrl: "http://translate.test", translateToken: "engine-token" };
+  const post = (body: unknown, headers: Record<string, string> = {}) =>
+    req("/v1/translate", { method: "POST", headers: { ...json, ...headers }, body: JSON.stringify(body) });
+
+  it("answers 503 when no engine is configured", async () => {
+    const res = await testApp().handle(post({ from: "es", to: "en", texts: ["hola"] }));
+    expect(res.status).toBe(503);
+  });
+
+  it("translates through the engine with its token", async () => {
+    const { calls, fetcher } = engine();
+    const app = testApp({ fetcher, config: translateConfig });
+    const res = await app.handle(post({ from: "es", to: "en", texts: ["hola", "adiós"] }));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ translations: ["HOLA", "ADIÓS"] });
+    expect(calls).toEqual([
+      { url: "http://translate.test/v1/translate", auth: "Bearer engine-token", body: { from: "es", to: "en", texts: ["hola", "adiós"] } },
+    ]);
+  });
+
+  it("sends only texts missing from the cache, once each, and keeps order", async () => {
+    const { calls, fetcher } = engine();
+    const app = testApp({ fetcher, config: translateConfig });
+    await app.handle(post({ from: "es", to: "en", texts: ["uno"] }));
+    const res = await app.handle(post({ from: "ES", to: "en", texts: ["dos", "uno", "dos", "tres"] }));
+    expect(await res.json()).toEqual({ translations: ["DOS", "UNO", "DOS", "TRES"] });
+    expect(calls.map((c) => c.body!.texts)).toEqual([["uno"], ["dos", "tres"]]);
+    await app.handle(post({ from: "es", to: "fr", texts: ["uno"] }));
+    expect(calls.length).toBe(3);
+  });
+
+  it("rejects bad requests before the engine sees them", async () => {
+    const { calls, fetcher } = engine();
+    const app = testApp({ fetcher, config: translateConfig });
+    for (const body of [
+      { from: "es", to: "en", texts: [] },
+      { from: "es", to: "en", texts: Array(51).fill("a") },
+      { from: "e", to: "en", texts: ["a"] },
+      { from: "es; DROP", to: "en", texts: ["a"] },
+      { to: "en", texts: ["a"] },
+    ])
+      expect((await app.handle(post(body))).status).toBe(400);
+    expect((await app.handle(post({ from: "es", to: "en", texts: Array(5).fill("a".repeat(5000)) }))).status).toBe(413);
+    expect((await app.handle(post({ from: "ja", to: "en", texts: Array(2).fill("あ".repeat(4000)) }))).status).toBe(413);
+    expect(calls.length).toBe(0);
+  });
+
+  it("passes on the engine's input errors and hides its failures", async () => {
+    const unsupported = engine({ status: 400, body: { error: "no model for xx to en" } });
+    let res = await testApp({ fetcher: unsupported.fetcher, config: translateConfig }).handle(post({ from: "xx", to: "en", texts: ["a"] }));
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe("no model for xx to en");
+    const broken = engine({ status: 500 });
+    res = await testApp({ fetcher: broken.fetcher, config: translateConfig }).handle(post({ from: "es", to: "en", texts: ["a"] }));
+    expect(res.status).toBe(502);
+    const down = mockFetch(async () => {
+      throw new TypeError("connection refused");
+    });
+    res = await testApp({ fetcher: down, config: translateConfig }).handle(post({ from: "es", to: "en", texts: ["a"] }));
+    expect(res.status).toBe(502);
+  });
+
+  it("limits requests per client address", async () => {
+    const { fetcher } = engine();
+    const app = testApp({ fetcher, config: { ...translateConfig, translateRate: 2 } });
+    const from = (ip: string) => post({ from: "es", to: "en", texts: ["hola"] }, { "cf-connecting-ip": ip });
+    expect((await app.handle(from("1.1.1.1"))).status).toBe(200);
+    expect((await app.handle(from("1.1.1.1"))).status).toBe(200);
+    expect((await app.handle(from("1.1.1.1"))).status).toBe(429);
+    expect((await app.handle(from("2.2.2.2"))).status).toBe(200);
+  });
+
+  it("lists the available directions", async () => {
+    const { calls, fetcher } = engine();
+    const app = testApp({ fetcher, config: translateConfig });
+    const res = await app.handle(req("/v1/translate/languages"));
+    expect(await res.json()).toEqual({ pairs: [["es", "en"], ["en", "es"]], pivot: "en" });
+    await app.handle(req("/v1/translate/languages"));
+    expect(calls.length).toBe(1);
   });
 });

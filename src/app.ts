@@ -12,8 +12,10 @@ import { commentsRoutes } from "./routes/comments";
 import { moderationRoutes } from "./routes/moderation";
 import { proxyRoutes } from "./routes/proxy";
 import { requestsRoutes } from "./routes/requests";
+import { translateRoutes } from "./routes/translate";
 import { votersRoutes } from "./routes/voters";
 import { createScreener } from "./screening";
+import { createTranslator } from "./translate";
 import { createUpstream } from "./upstream";
 
 type AppOptions = {
@@ -30,6 +32,7 @@ export function createApp(options: AppOptions = {}) {
   const upstream = createUpstream(config, fetcher);
   const relay = createRelay(config, fetcher);
   const screen = createScreener(config, fetcher);
+  const translator = createTranslator(config, fetcher);
   const version = options.version ?? "0.0.0";
 
   return new Elysia()
@@ -46,6 +49,7 @@ export function createApp(options: AppOptions = {}) {
             { name: "Manager", description: "Latest stable Reseam Manager for clients before 0.32" },
             { name: "Announcements", description: "Operational notices" },
             { name: "Requests", description: "Patch requests, votes, comments and reports" },
+            { name: "Translate", description: "Post translation" },
             { name: "Health", description: "Service health" },
           ],
           components: {
@@ -82,6 +86,7 @@ export function createApp(options: AppOptions = {}) {
         managerIndex: "/manager.json",
         announcements: "/v1/announcements",
         requests: "/v1/requests",
+        translate: "/v1/translate",
         health: "/v1/health",
       },
     }))
@@ -92,6 +97,7 @@ export function createApp(options: AppOptions = {}) {
     .use(requestsRoutes(config, db, { upstream, screen, relay }))
     .use(commentsRoutes(config, db, { screen, relay }))
     .use(moderationRoutes(config, db))
+    .use(translateRoutes(config, translator))
     .use(healthRoutes(version));
 }
 
