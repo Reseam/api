@@ -18,6 +18,9 @@ export type Config = {
   translateToken: string;
   translateRate: number;
   translateCacheEntries: number;
+  forgejoUrl: string;
+  communityOrg: string;
+  communityTtl: number;
 };
 
 const DEFAULT_PATCHES_URL =
@@ -28,6 +31,8 @@ const DEFAULT_PATCHES_BUNDLE_BASE_URL =
   "https://cdn.reseam.app/patches";
 const DEFAULT_MANAGER_BINARY_BASE_URL =
   "https://cdn.reseam.app/manager";
+const DEFAULT_FORGEJO_URL = "https://git.reseam.app";
+const DEFAULT_COMMUNITY_ORG = "reseam-community";
 
 export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
   return {
@@ -54,6 +59,9 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
     translateToken: env.TRANSLATE_TOKEN || "",
     translateRate: readInt(env.TRANSLATE_RATE, 120),
     translateCacheEntries: readInt(env.TRANSLATE_CACHE_ENTRIES, 20000),
+    forgejoUrl: stripTrailingSlash(env.FORGEJO_URL || DEFAULT_FORGEJO_URL),
+    communityOrg: env.COMMUNITY_ORG || DEFAULT_COMMUNITY_ORG,
+    communityTtl: readInt(env.COMMUNITY_TTL, 600),
   };
 }
 

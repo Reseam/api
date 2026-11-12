@@ -52,6 +52,9 @@ const config: Config = {
   translateToken: "",
   translateRate: 120,
   translateCacheEntries: 1000,
+  forgejoUrl: "https://git.example.test",
+  communityOrg: "reseam-community",
+  communityTtl: 600,
 };
 
 function mockFetch(fn: () => Promise<Response>): typeof fetch {

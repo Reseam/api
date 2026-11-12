@@ -1,5 +1,6 @@
 import { openapi } from "@elysiajs/openapi";
 import { Elysia } from "elysia";
+import { createCommunity } from "./community";
 import { readConfig, type Config } from "./config";
 import { publicCors } from "./cors";
 import { openDatabase, type DrizzleDb } from "./db/client";
@@ -9,6 +10,7 @@ import { announcementsRoutes } from "./routes/announcements";
 import { healthRoutes } from "./routes/health";
 import { managerRoutes } from "./routes/manager";
 import { commentsRoutes } from "./routes/comments";
+import { communityRoutes } from "./routes/community";
 import { moderationRoutes } from "./routes/moderation";
 import { proxyRoutes } from "./routes/proxy";
 import { requestsRoutes } from "./routes/requests";
@@ -30,6 +32,7 @@ export function createApp(options: AppOptions = {}) {
   const db = options.db ?? openDatabase(config.dbPath);
   const fetcher = options.fetcher ?? fetch;
   const upstream = createUpstream(config, fetcher);
+  const community = createCommunity(config, fetcher);
   const relay = createRelay(config, fetcher);
   const screen = createScreener(config, fetcher);
   const translator = createTranslator(config, fetcher);
@@ -47,6 +50,7 @@ export function createApp(options: AppOptions = {}) {
           tags: [
             { name: "Proxy", description: "Release index files and download redirects" },
             { name: "Manager", description: "Latest stable Reseam Manager for clients before 0.32" },
+            { name: "Community", description: "Patch bundles listed by the community organization" },
             { name: "Announcements", description: "Operational notices" },
             { name: "Requests", description: "Patch requests, votes, comments and reports" },
             { name: "Translate", description: "Translation" },
@@ -84,6 +88,7 @@ export function createApp(options: AppOptions = {}) {
       endpoints: {
         patchesIndex: "/patches.json",
         managerIndex: "/manager.json",
+        community: "/v1/community",
         announcements: "/v1/announcements",
         requests: "/v1/requests",
         translate: "/v1/translate",
@@ -92,6 +97,7 @@ export function createApp(options: AppOptions = {}) {
     }))
     .use(proxyRoutes(config, upstream))
     .use(managerRoutes(config, upstream))
+    .use(communityRoutes(config, community))
     .use(announcementsRoutes(config, db, relay))
     .use(votersRoutes(config, db, fetcher))
     .use(requestsRoutes(config, db, { upstream, screen, relay }))

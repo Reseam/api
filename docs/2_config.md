@@ -29,12 +29,15 @@ All settings are environment variables, read at startup.
 | `TRANSLATE_TOKEN` | empty | token the engine requires |
 | `TRANSLATE_RATE` | `120` | translate requests per client address per minute |
 | `TRANSLATE_CACHE_ENTRIES` | `20000` | translations kept in memory |
+| `FORGEJO_URL` | `https://git.reseam.app` | the Forgejo instance that holds the community organization |
+| `COMMUNITY_ORG` | `reseam-community` | the organization whose repositories make up the [community list](3_endpoints.md#community) |
+| `COMMUNITY_TTL` | `600` | seconds to keep the community list before reading it again |
 
 ## Caching
 
-The server keeps each index in memory for `CACHE_TTL` seconds. Requests arriving while it refreshes share one fetch. If a refresh fails, it keeps serving the last good copy.
+The server keeps each index in memory for `CACHE_TTL` seconds, and the community list for `COMMUNITY_TTL` seconds. Requests arriving while it refreshes share one fetch. If a refresh fails, it keeps serving the last good copy, and a community repository that fails to load keeps its last good entry.
 
-Release endpoints send `Cache-Control: public, s-maxage=<CACHE_TTL>, stale-while-revalidate=60`, so a CDN in front can cache them too. Announcements and the request list send `no-cache`, so they are checked on every request. All of them send an `ETag` and answer `304` when nothing changed.
+Release and community endpoints send `Cache-Control: public, s-maxage=<CACHE_TTL>, stale-while-revalidate=60`, so a CDN in front can cache them too. Announcements and the request list send `no-cache`, so they are checked on every request. All of them send an `ETag` and answer `304` when nothing changed.
 
 The origin must accept traffic only from the proxy that sets `CLIENT_IP_HEADER`; otherwise a client can forge the header and dodge the limits.
 
