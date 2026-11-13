@@ -28,11 +28,11 @@ The answer is `201` with `{ "token": "..." }`. Send it as `Authorization: Bearer
 | Query | |
 |---|---|
 | `app` | package name |
-| `status` | `open`, `planned`, `shipped`, `declined`, `duplicate`, or `hidden` (admins) |
-| `sort` | `top` (default, most votes first) or `new` |
+| `status` | `open`, `shipped`, `closed`, or `hidden` (admins) |
+| `sort` | `top` (default, most votes first), `new`, or `priority` (high, medium, low, then unset; most votes first within each) |
 | `q` | words that must all appear in the title or body |
 
-A request has `id`, `app` (package name or `null`), `title`, `body`, `status`, `shipped_in` (for example `patches@0.48.0`), `duplicate_of`, `votes`, `comments` (how many are visible), and `created_at`. With the admin token, the list includes hidden requests.
+A request has `id`, `app` (package name or `null`), `title`, `body`, `status`, `priority` (`high`, `medium`, `low`, or `null`), `shipped_in` (for example `patches@0.48.0`), `duplicate_of` (set on a closed duplicate), `votes`, `comments` (how many are visible), and `created_at`. With the admin token, the list includes hidden requests.
 
 ## Post
 
@@ -57,10 +57,10 @@ One token posts at most 3 requests a day, one address at most 10.
 With `OPENROUTER_API_KEY` set, each new request is checked by a decision model on OpenRouter (`SCREENING_MODEL`, Drex Max by default) before it is stored:
 
 - **Spam.** Spam, ads, abuse, and anything that isn't a request are stored as `hidden`.
-- **Duplicates.** If it asks for the same thing as an open, planned, or shipped request, the answer is `409` with that request as `duplicate`. Vote on it, or send the request again with `force: true`.
+- **Duplicates.** If it asks for the same thing as an open, shipped, or closed request that isn't itself a duplicate, the answer is `409` with that request as `duplicate`. Vote on it, or send the request again with `force: true`.
 - **App.** A request without `app` gets the package of the app it is about, when the model is confident.
 
-The model sees the new request's title and body, and the title and body of every open, planned, and shipped request for the same app or for no app (every app's, when the new one names none). If it can't be reached, the request is posted without screening. Comments get the spam check too, with their request's title and body as context.
+The model sees the new request's title and body, and the title and body of every open, shipped, and closed request that isn't a duplicate, for the same app or for no app (every app's, when the new one names none). If it can't be reached, the request is posted without screening. Comments get the spam check too, with their request's title and body as context.
 
 ## Votes and reports
 
@@ -94,7 +94,7 @@ curl -X PATCH https://api.reseam.app/v1/requests/12 \
   -d '{ "status": "shipped", "shipped_in": "patches@0.48.0" }'
 ```
 
-`PATCH` takes `status`, `shipped_in`, `duplicate_of`, `title`, and `app`. Setting `status` back to `open` restores a hidden request.
+`PATCH` takes `status`, `priority`, `shipped_in`, `duplicate_of`, `title`, and `app`. Setting `status` back to `open` restores a hidden request.
 
 `PATCH /v1/comments/<id>` with `{ "hidden": true }` or `false` hides or shows a comment. With the admin token, the comment list includes hidden comments.
 

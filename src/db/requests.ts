@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, inArray, isNull, like, ne, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, isNull, like, ne, or, sql, type SQL } from "drizzle-orm";
 import type { DrizzleDb } from "./client";
 import { countWhere } from "./counts";
 import { requestComments, requests, requestVotes } from "./schema";
@@ -9,6 +9,7 @@ import type { CreateRequest, Request, RequestQuery, RequestStatus, UpdateRequest
 const requestId = sql`${requests}.${sql.identifier(requests.id.name)}`;
 const voteCount = sql<number>`(SELECT COUNT(*) FROM ${requestVotes} WHERE ${requestVotes.requestId} = ${requestId})`;
 const commentCount = sql<number>`(SELECT COUNT(*) FROM ${requestComments} WHERE ${requestComments.requestId} = ${requestId} AND ${requestComments.hidden} = 0)`;
+const priorityRank = sql`CASE ${requests.priority} WHEN 'high' THEN 0 WHEN 'medium' THEN 1 WHEN 'low' THEN 2 ELSE 3 END`;
 
 function requestQuery(db: DrizzleDb) {
   return db
@@ -18,6 +19,7 @@ function requestQuery(db: DrizzleDb) {
       title: requests.title,
       body: requests.body,
       status: requests.status,
+      priority: requests.priority,
       shipped_in: requests.shippedIn,
       duplicate_of: requests.duplicateOf,
       votes: voteCount,
@@ -36,7 +38,8 @@ export function listRequests(db: DrizzleDb, query: RequestQuery, includeHidden: 
     const pattern = `%${word.replace(/[%_\\]/g, "\\$&")}%`;
     conditions.push(or(like(requests.title, pattern), like(requests.body, pattern))!);
   }
-  const order = query.sort === "new" ? [desc(requests.createdAt)] : [desc(voteCount), desc(requests.createdAt)];
+  const top = [desc(voteCount), desc(requests.createdAt)];
+  const order = query.sort === "new" ? [desc(requests.createdAt)] : query.sort === "priority" ? [asc(priorityRank), ...top] : top;
   return requestQuery(db).where(and(...conditions)).orderBy(...order).all();
 }
 
@@ -44,14 +47,15 @@ export function getRequest(db: DrizzleDb, id: number): Request | undefined {
   return requestQuery(db).where(eq(requests.id, id)).get();
 }
 
-/** Requests a new one may repeat: open, planned and shipped ones for its app or for no app, or all of them when it names none. */
+/** Requests a new one may repeat: visible ones that aren't duplicates themselves, for its app or for no app, or all of them when it names none. */
 export function screeningCandidates(db: DrizzleDb, app: string | undefined) {
   return db
     .select({ id: requests.id, title: requests.title, body: requests.body })
     .from(requests)
     .where(
       and(
-        inArray(requests.status, ["open", "planned", "shipped"]),
+        inArray(requests.status, ["open", "shipped", "closed"]),
+        isNull(requests.duplicateOf),
         app ? or(eq(requests.app, app), isNull(requests.app)) : undefined,
       ),
     )
@@ -91,6 +95,7 @@ export function updateRequest(db: DrizzleDb, id: number, input: UpdateRequest) {
   if (input.app !== undefined) patch.app = input.app;
   if (input.title !== undefined) patch.title = input.title.trim();
   if (input.status !== undefined) patch.status = input.status;
+  if (input.priority !== undefined) patch.priority = input.priority;
   if (input.shipped_in !== undefined) patch.shippedIn = input.shipped_in;
   if (input.duplicate_of !== undefined) patch.duplicateOf = input.duplicate_of;
   if (Object.keys(patch).length > 0) db.update(requests).set(patch).where(eq(requests.id, id)).run();

@@ -1,13 +1,8 @@
 import { t } from "elysia";
 
-export const RequestStatusSchema = t.Union([
-  t.Literal("open"),
-  t.Literal("planned"),
-  t.Literal("shipped"),
-  t.Literal("declined"),
-  t.Literal("duplicate"),
-  t.Literal("hidden"),
-]);
+export const RequestStatusSchema = t.Union([t.Literal("open"), t.Literal("shipped"), t.Literal("closed"), t.Literal("hidden")]);
+
+export const RequestPrioritySchema = t.Union([t.Literal("high"), t.Literal("medium"), t.Literal("low")]);
 
 const PackageSchema = t.String({ pattern: "^[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z][A-Za-z0-9_]*)+$", maxLength: 255 });
 
@@ -17,6 +12,7 @@ export const RequestSchema = t.Object({
   title: t.String(),
   body: t.Union([t.String(), t.Null()]),
   status: RequestStatusSchema,
+  priority: t.Union([RequestPrioritySchema, t.Null()]),
   shipped_in: t.Union([t.String(), t.Null()]),
   duplicate_of: t.Union([t.Number(), t.Null()]),
   votes: t.Number(),
@@ -29,7 +25,7 @@ export const RequestListSchema = t.Array(RequestSchema);
 export const RequestQuerySchema = t.Object({
   app: t.Optional(t.String()),
   status: t.Optional(RequestStatusSchema),
-  sort: t.Optional(t.Union([t.Literal("top"), t.Literal("new")])),
+  sort: t.Optional(t.Union([t.Literal("top"), t.Literal("new"), t.Literal("priority")])),
   q: t.Optional(t.String({ maxLength: 100 })),
 });
 
@@ -44,6 +40,7 @@ export const UpdateRequestSchema = t.Object({
   app: t.Optional(t.Union([PackageSchema, t.Null()])),
   title: t.Optional(t.String({ minLength: 1, maxLength: 100 })),
   status: t.Optional(RequestStatusSchema),
+  priority: t.Optional(t.Union([RequestPrioritySchema, t.Null()])),
   shipped_in: t.Optional(t.Union([t.String(), t.Null()])),
   duplicate_of: t.Optional(t.Union([t.Number({ minimum: 1 }), t.Null()])),
 });
@@ -65,6 +62,7 @@ export const VotesSchema = t.Object({ votes: t.Number() });
 
 export type Request = typeof RequestSchema.static;
 export type RequestStatus = typeof RequestStatusSchema.static;
+export type RequestPriority = typeof RequestPrioritySchema.static;
 export type CreateRequest = typeof CreateRequestSchema.static;
 export type UpdateRequest = typeof UpdateRequestSchema.static;
 export type RequestQuery = typeof RequestQuerySchema.static;

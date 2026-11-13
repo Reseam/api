@@ -1,5 +1,5 @@
 import { sqliteTable, text, integer, index, primaryKey, type AnySQLiteColumn } from "drizzle-orm/sqlite-core";
-import type { RequestStatus } from "../schemas/requests";
+import type { RequestPriority, RequestStatus } from "../schemas/requests";
 
 export const announcements = sqliteTable(
   "announcements",
@@ -61,6 +61,7 @@ export const requests = sqliteTable(
     title: text("title").notNull(),
     body: text("body"),
     status: text("status").notNull().$type<RequestStatus>().default("open"),
+    priority: text("priority").$type<RequestPriority>(),
     shippedIn: text("shipped_in"),
     duplicateOf: integer("duplicate_of").references((): AnySQLiteColumn => requests.id, { onDelete: "set null" }),
     voterId: integer("voter_id")
