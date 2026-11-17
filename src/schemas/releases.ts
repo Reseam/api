@@ -51,6 +51,19 @@ const PatchOptionSchema = t.Object({
   required: t.Boolean(),
 });
 
+const OptionTranslationSchema = t.Object({
+  key: t.String(),
+  title: t.Optional(t.String()),
+  description: t.Optional(t.String()),
+});
+
+const PatchTranslationSchema = t.Object({
+  locale: t.String(),
+  name: t.Optional(t.String()),
+  description: t.Optional(t.String()),
+  options: t.Optional(t.Array(OptionTranslationSchema)),
+});
+
 export const PatchSchema = t.Object({
   bundle: t.String(),
   id: t.String(),
@@ -61,6 +74,8 @@ export const PatchSchema = t.Object({
   dependencies: t.Array(t.String()),
   compatibility: CompatibilitySchema,
   options: t.Array(PatchOptionSchema),
+  rewrites_output: t.Optional(t.Boolean()),
+  translations: t.Optional(t.Array(PatchTranslationSchema)),
 });
 
 export const ReleaseSchema = t.Object({

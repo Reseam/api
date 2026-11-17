@@ -15,7 +15,7 @@ Every route allows requests from any origin. Errors are JSON: `{ "error": "messa
 | `GET /manager.json` | the Reseam Manager index |
 | `GET /v1/manager` | `{ bundle, release }`: the latest stable Reseam Manager, for Manager before 0.32 |
 
-An index has `bundle` and `releases`, newest first, as `reseam release` writes them. A `release` has `version`, `created_at`, `description` (its release notes), `download_url`, `prerelease`, and, for the newest stable release and the newest prerelease, `patches`: every patch's name, description, apps, dependencies, and options. `bundle` has `name`, `author`, `description`, `homepage`, and `public_key`.
+An index has `bundle` and `releases`, newest first, as `reseam release` writes them. A `release` has `version`, `created_at`, `description` (its release notes), `download_url`, `prerelease`, and, for the newest stable release and the newest prerelease, `patches`: every patch's name, description, apps, dependencies, and options, written in English, and its `translations`: per BCP 47 `locale`, the `name`, `description` and option `title` and `description` that locale translates. A field a locale leaves out shows in the reader's next language, then in English; `patchText` in `@reseam/browser` resolves it the way Reseam Manager does. `bundle` has `name`, `author`, `description`, `homepage`, and `public_key`.
 
 ## Community
 
